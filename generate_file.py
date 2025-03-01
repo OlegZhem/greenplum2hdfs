@@ -7,10 +7,11 @@ import random
 import string
 from datetime import datetime, timedelta
 
-logger = logging.getLogger('')
+logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 sh = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('[%(asctime)s] %(message)s', datefmt='%H:%M:%S')
+formatter = logging.Formatter('[%(asctime)s] %(message)s')
+formatter.default_msec_format = '%s.%03d'
 sh.setFormatter(formatter)
 logger.addHandler(sh)
 
@@ -39,7 +40,7 @@ def generate_row(current_date):
         column3 = generate_random_string(random.randint(7, 15), with_digits=False)
 
     # Format column4 as a timestamp string
-    column4 = current_date.strftime("%Y-%m-%d %H:%M:%S")
+    column4 = current_date.strftime("%Y-%m-%d %H:%M:%S:%f")[:-3]
 
     return [column1, column2, column3, column4]
 
@@ -56,6 +57,7 @@ def generate_and_save_data(num_rows, rows_per_day, start_date, filename):
         if dirname:
             logger.info(f'create directory {dirname}')
             os.makedirs(dirname, exist_ok=True)
+
     with open(filename, 'w') as file:
         logger.info(f"open file {file_name}")
         file.write('column1,column2,column3,column4\n')
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     num_rows = 2_000_000  # Total number of rows to generate
     rows_per_day = 100_000  # Number of rows per day
     start_date = datetime(2025, 1, 1, 0, 0, 0)  # Start date and time (midnight)
-    file_name = 'data/test_data.csv'
+    file_name = 'data/test_data_2M.csv'
     # Generate data and save to file
     generate_and_save_data(num_rows, rows_per_day, start_date, file_name)
     logger.info(f"File {file_name} successfully created. Generated {num_rows} rows.")

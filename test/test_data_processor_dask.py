@@ -1,6 +1,6 @@
-
+import dask.dataframe as dd
 import pandas as pd
-from src.data_processor_pandas import transform_data_frame
+from src.data_processor_dask import transform_data_frame
 import pytest
 
 def test_remove_duplicates():
@@ -11,8 +11,11 @@ def test_remove_duplicates():
         'column3': ['abc123', 'def', 'ghi456', 'ghi456'],
         'column4': pd.to_datetime(['2023-10-01 11:30', '2023-10-01 12:00', '2023-10-01 04:00', '2023-10-01 04:00'])
     }
-    df = pd.DataFrame(data)
-    processed_df = transform_data_frame(df)
+
+    pdf = pd.DataFrame(data)
+    df = dd.from_pandas(pdf, npartitions=1)
+    #df = dd.DataFrame(data)
+    processed_df = transform_data_frame(df).compute()
     assert len(processed_df) == 3
 
 def test_filter_time():
@@ -23,7 +26,9 @@ def test_filter_time():
         'column3': ['abc123', 'ghi456'],
         'column4': pd.to_datetime(['2023-10-01 01:30', '2023-10-01 04:00'])
     }
-    df = pd.DataFrame(data)
+    pdf = pd.DataFrame(data)
+    df = dd.from_pandas(pdf, npartitions=1)
+    # df = dd.DataFrame(data)
     processed_df = transform_data_frame(df)
     assert len(processed_df) == 1
 
@@ -35,8 +40,10 @@ def test_clear_column3():
         'column3': ['abc123', 'def', 'ghi456'],
         'column4': pd.to_datetime(['2023-10-01 11:30', '2023-10-01 12:00', '2023-10-01 04:00'])
     }
-    df = pd.DataFrame(data)
-    processed_df = transform_data_frame(df)
+    pdf = pd.DataFrame(data)
+    df = dd.from_pandas(pdf, npartitions=1)
+    # df = dd.DataFrame(data)
+    processed_df = transform_data_frame(df).compute()
     assert processed_df['column3'].tolist() == ['abc123', '', 'ghi456']
 
 def test_remove_empty_column3():
@@ -47,8 +54,10 @@ def test_remove_empty_column3():
         'column3': ['abc123', '', 'ghi456'],
         'column4': pd.to_datetime(['2023-10-01 11:30', '2023-10-01 12:00', '2023-10-01 04:00'])
     }
-    df = pd.DataFrame(data)
-    processed_df = transform_data_frame(df)
+    pdf = pd.DataFrame(data)
+    df = dd.from_pandas(pdf, npartitions=1)
+    # df = dd.DataFrame(data)
+    processed_df = transform_data_frame(df).compute()
     assert len(processed_df) == 2
 
 def test_convert_from_string_column4():
@@ -58,8 +67,10 @@ def test_convert_from_string_column4():
         'column3': ['abc123', '4jts', 'ghi456'],
         'column4': ['2023-10-01 11:30', '2023-10-01 12:00', '2023-10-01 04:00']
     }
-    df = pd.DataFrame(data)
-    processed_df = transform_data_frame(df)
+    pdf = pd.DataFrame(data)
+    df = dd.from_pandas(pdf, npartitions=1)
+    #df = dd.DataFrame(data)
+    processed_df = transform_data_frame(df).compute()
     assert len(processed_df) == 3
 
 # Run the tests
