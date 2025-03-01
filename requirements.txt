@@ -5,3 +5,4 @@ hdfs~=2.7.3
 psycopg2~=2.9.10
 pytest~=8.3.4
 dask~=2025.2.0
+SQLAlchemy~=2.0.38

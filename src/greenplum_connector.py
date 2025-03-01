@@ -21,6 +21,21 @@ def data_generator(con, query, chunk_size=1000):
                 break
             yield rows
 
+def get_greenplum_connection_uri(**kwargs):
+    """
+    Generates a SQLAlchemy connection string for Greenplum.
+
+    :param kwargs: Dictionary containing connection parameters:
+                   - host
+                   - port
+                   - dbname
+                   - user
+                   - password
+    :return: SQLAlchemy connection string (str)
+    """
+    return f"postgresql+psycopg2://{kwargs['user']}:{kwargs['password']}@{kwargs['host']}:{kwargs['port']}/{kwargs['dbname']}"
+
+
 
 if __name__ == "__main__":
 
