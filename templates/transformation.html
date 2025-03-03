@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Processor</title>
+    <script>
+    function startProcess() {
+        var startButton = document.getElementById("startButton");
+        startButton.disabled = true;
+
+        var dataSource = document.getElementById("dataSource").value;
+        var dataTransformer = document.getElementById("dataTransformer").value;
+        var dataDestination = document.getElementById("dataDestination").value;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "/transformation/process", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                // Re-enable button after process completes.
+                startButton.disabled = false;
+                alert("Process completed: " + xhr.responseText);
+            }
+        };
+        xhr.send(JSON.stringify({
+            data_source: dataSource,
+            data_transformer: dataTransformer,
+            data_destination: dataDestination
+        }));
+    }
+    </script>
+</head>
+<body>
+    <h1>Data Processor</h1>
+    <div>
+        <label for="dataSource">DataSource:</label>
+        <select id="dataSource">
+            <option value="CSV">CSV</option>
+            <option value="GREENPLUM">GREENPLUM</option>
+        </select>
+    </div>
+    <div>
+        <label for="dataTransformer">DataTransformer:</label>
+        <select id="dataTransformer">
+            <option value="PANDAS">PANDAS</option>
+            <option value="DASK">DASK</option>
+        </select>
+    </div>
+    <div>
+        <label for="dataDestination">DataDestination:</label>
+        <select id="dataDestination">
+            <option value="CSV">CSV</option>
+            <option value="HDFS">HDFS</option>
+        </select>
+    </div>
+    <br>
+    <button id="startButton" onclick="startProcess()">Start</button>
+</body>
+</html>

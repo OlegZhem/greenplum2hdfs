@@ -16,16 +16,17 @@ Python project to move data from one storage to another with transformation
     - remove rows with empty column3
     - remove rows from 1AM to 3 AM
     - replace column3 without digits to empty string
-2. Aggregate data per hour
+2. Aggregate data per hour by programm and by SQL
     - number of unique values in column3
     - mean value in column1 and column2
-    - median value in column1 and co;umn2
-3. Process float columns
+    - median value in column1 and column2
+3. Merge Aggregated data with initial data set by neearst hour.
+4. Process float columns
  - create histogram
  - calculate 95 percent confidence interval
-4. Store data to HDFS
-5. Create UI
-6. Calculte 10 metrics
+5. Store data to HDFS
+6. Create UI
+7. Calculte 10 metrics
 
 # Restrictions
 1. I have no access to greenplum, so I have no ability to test solution for greenplum.
@@ -43,5 +44,5 @@ pip numpy
 
 ## Test Data
 Due to I have no access to greenplum, I use big csv file for testing.
-Generate test dta with generate_file.py. It generates test_data.csv. Set number of rows, number of rows per day and start date.
+Generate test data with generate_file.py. Set file name, number of rows, number of rows per day and start date.
 

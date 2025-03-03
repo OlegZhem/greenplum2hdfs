@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <script>
+        async function saveSettings() {
+            const settings = {
+                IN_CSV_FILE_PATH: document.getElementById("IN_CSV_FILE_PATH").value,
+                PANDAS_CHUNK_SIZE: parseInt(document.getElementById("PANDAS_CHUNK_SIZE").value),
+                OUT_PANDAS_CSV_FILE_PATH: document.getElementById("OUT_PANDAS_CSV_FILE_PATH").value,
+                BOCK_SIZE: document.getElementById("BOCK_SIZE").value,
+                OUT_DASK_CSV_FILE_PATH: document.getElementById("OUT_DASK_CSV_FILE_PATH").value,
+                GREENPLUM_CONNECTION_PARAMS: {
+                    host: document.getElementById("host").value,
+                    port: document.getElementById("port").value,
+                    dbname: document.getElementById("dbname").value,
+                    user: document.getElementById("user").value,
+                    password: document.getElementById("password").value
+                },
+                GREENPLUM_TABLE_NAME: document.getElementById("GREENPLUM_TABLE_NAME").value,
+                DASK_PARTITIONS: parseInt(document.getElementById("DASK_PARTITIONS").value),
+                GREENPLUM_CHUNK_SIZE: parseInt(document.getElementById("GREENPLUM_CHUNK_SIZE").value)
+            };
+
+            const response = await fetch("/settings/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await response.json();
+            alert(result.status || result.error);
+        }
+    </script>
+</head>
+<body>
+    <h2>Settings</h2>
+    <form onsubmit="event.preventDefault(); saveSettings();">
+        <label>IN_CSV_FILE_PATH: <input type="text" id="IN_CSV_FILE_PATH" value="{{ settings['IN_CSV_FILE_PATH'] }}"></label><br>
+        <label>PANDAS_CHUNK_SIZE: <input type="number" id="PANDAS_CHUNK_SIZE" value="{{ settings['PANDAS_CHUNK_SIZE'] }}"></label><br>
+        <label>OUT_PANDAS_CSV_FILE_PATH: <input type="text" id="OUT_PANDAS_CSV_FILE_PATH" value="{{ settings['OUT_PANDAS_CSV_FILE_PATH'] }}"></label><br>
+        <label>BOCK_SIZE: <input type="text" id="BOCK_SIZE" value="{{ settings['BOCK_SIZE'] }}"></label><br>
+        <label>OUT_DASK_CSV_FILE_PATH: <input type="text" id="OUT_DASK_CSV_FILE_PATH" value="{{ settings['OUT_DASK_CSV_FILE_PATH'] }}"></label><br>
+
+        <h3>Greenplum Connection</h3>
+        <label>Host: <input type="text" id="host" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['host'] }}"></label><br>
+        <label>Port: <input type="text" id="port" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['port'] }}"></label><br>
+        <label>DB Name: <input type="text" id="dbname" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['dbname'] }}"></label><br>
+        <label>User: <input type="text" id="user" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['user'] }}"></label><br>
+        <label>Password: <input type="password" id="password" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['password'] }}"></label><br>
+
+        <label>GREENPLUM_TABLE_NAME: <input type="text" id="GREENPLUM_TABLE_NAME" value="{{ settings['GREENPLUM_TABLE_NAME'] }}"></label><br>
+        <label>DASK_PARTITIONS: <input type="number" id="DASK_PARTITIONS" value="{{ settings['DASK_PARTITIONS'] }}"></label><br>
+        <label>GREENPLUM_CHUNK_SIZE: <input type="number" id="GREENPLUM_CHUNK_SIZE" value="{{ settings['GREENPLUM_CHUNK_SIZE'] }}"></label><br>
+
+        <button type="submit">Save Settings</button>
+    </form>
+</body>
+</html>

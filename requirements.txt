@@ -6,3 +6,5 @@ psycopg2~=2.9.10
 pytest~=8.3.4
 dask~=2025.2.0
 SQLAlchemy~=2.0.38
+distributed~=2025.2.0
+Flask~=3.1.0

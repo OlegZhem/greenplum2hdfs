@@ -8,9 +8,10 @@ class Saver(ABC):
     Abstract base class for saving data in chunks.
     """
 
-    def __init__(self):
+    def __init__(self, suppress_exceptions = False):
         self.executor = None
         self.first_chunk = True
+        self.suppress_exceptions = suppress_exceptions
 
     def __enter__(self):
         """
@@ -26,9 +27,12 @@ class Saver(ABC):
         """
         if self.executor:
             self.executor.shutdown(wait=True)
-        if exception_type:
-            print(f"An exception occurred: {exception_value}")
-        return True  # Suppress exceptions if any
+        if self.suppress_exceptions:
+            if exception_type:
+                print(f"An exception occurred: {exception_value}")
+            return True  # Suppress exceptions if any
+        else:
+            return False
 
     @abstractmethod
     def save_impl(self, df):

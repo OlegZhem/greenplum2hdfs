@@ -2,9 +2,9 @@
 from sqlalchemy import *
 from sqlalchemy.sql import table, column
 
-QUERY = 'SELECT * FROM your_table'
+QUERY_TABLE = 'SELECT * FROM your_table'
 
-QUERY1 = """SELECT DISTINCT
+QUERY_TRANSFORM_1 = """SELECT DISTINCT
     column1,
     column2,
     CASE 
@@ -17,7 +17,7 @@ WHERE
     column3 IS NOT NULL AND column3 <> '' 
     AND (EXTRACT(HOUR FROM column4) NOT BETWEEN 1 AND 2"""
 
-QUERY2 = """WITH Deduplicated AS (
+QUERY_TRANSFORM_2 = """WITH Deduplicated AS (
     SELECT DISTINCT ON (column1, column2, column3, column4) *
     FROM your_table
     ORDER BY column1, column2, column3, column4

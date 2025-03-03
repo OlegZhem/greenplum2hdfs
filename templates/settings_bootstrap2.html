@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script>
+        async function saveSettings() {
+            const settings = {
+                IN_CSV_FILE_PATH: document.getElementById("IN_CSV_FILE_PATH").value,
+                PANDAS_CHUNK_SIZE: parseInt(document.getElementById("PANDAS_CHUNK_SIZE").value),
+                OUT_PANDAS_CSV_FILE_PATH: document.getElementById("OUT_PANDAS_CSV_FILE_PATH").value,
+                BOCK_SIZE: document.getElementById("BOCK_SIZE").value,
+                OUT_DASK_CSV_FILE_PATH: document.getElementById("OUT_DASK_CSV_FILE_PATH").value,
+                GREENPLUM_CONNECTION_PARAMS: {
+                    host: document.getElementById("host").value,
+                    port: document.getElementById("port").value,
+                    dbname: document.getElementById("dbname").value,
+                    user: document.getElementById("user").value,
+                    password: document.getElementById("password").value
+                },
+                GREENPLUM_TABLE_NAME: document.getElementById("GREENPLUM_TABLE_NAME").value,
+                DASK_PARTITIONS: parseInt(document.getElementById("DASK_PARTITIONS").value),
+                GREENPLUM_CHUNK_SIZE: parseInt(document.getElementById("GREENPLUM_CHUNK_SIZE").value)
+            };
+
+            const response = await fetch("/settings/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await response.json();
+            alert(result.status || result.error);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>Settings</h2>
+        <form onsubmit="event.preventDefault(); saveSettings();">
+            <!-- General Settings -->
+            <div class="form-group row">
+                <label for="IN_CSV_FILE_PATH" class="col-sm-2 col-form-label">IN_CSV_FILE_PATH:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="IN_CSV_FILE_PATH" value="{{ settings['IN_CSV_FILE_PATH'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="PANDAS_CHUNK_SIZE" class="col-sm-2 col-form-label">PANDAS_CHUNK_SIZE:</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="PANDAS_CHUNK_SIZE" value="{{ settings['PANDAS_CHUNK_SIZE'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="OUT_PANDAS_CSV_FILE_PATH" class="col-sm-2 col-form-label">OUT_PANDAS_CSV_FILE_PATH:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="OUT_PANDAS_CSV_FILE_PATH" value="{{ settings['OUT_PANDAS_CSV_FILE_PATH'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="BOCK_SIZE" class="col-sm-2 col-form-label">BOCK_SIZE:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="BOCK_SIZE" value="{{ settings['BOCK_SIZE'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="OUT_DASK_CSV_FILE_PATH" class="col-sm-2 col-form-label">OUT_DASK_CSV_FILE_PATH:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="OUT_DASK_CSV_FILE_PATH" value="{{ settings['OUT_DASK_CSV_FILE_PATH'] }}">
+                </div>
+            </div>
+
+            <!-- Greenplum Connection Card (Shifted to the right) -->
+            <div class="row">
+                <div class="col-sm-8 offset-sm-2"> <!-- Shift the card to the right -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title">Greenplum Connection</h3>
+                            <div class="form-group row">
+                                <label for="host" class="col-sm-3 col-form-label">Host:</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="host" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['host'] }}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="port" class="col-sm-3 col-form-label">Port:</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="port" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['port'] }}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="dbname" class="col-sm-3 col-form-label">DB Name:</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="dbname" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['dbname'] }}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="user" class="col-sm-3 col-form-label">User:</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="user" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['user'] }}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="password" class="col-sm-3 col-form-label">Password:</label>
+                                <div class="col-sm-9">
+                                    <input type="password" class="form-control" id="password" value="{{ settings['GREENPLUM_CONNECTION_PARAMS']['password'] }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Settings -->
+            <div class="form-group row">
+                <label for="GREENPLUM_TABLE_NAME" class="col-sm-2 col-form-label">GREENPLUM_TABLE_NAME:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="GREENPLUM_TABLE_NAME" value="{{ settings['GREENPLUM_TABLE_NAME'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="DASK_PARTITIONS" class="col-sm-2 col-form-label">DASK_PARTITIONS:</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="DASK_PARTITIONS" value="{{ settings['DASK_PARTITIONS'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="GREENPLUM_CHUNK_SIZE" class="col-sm-2 col-form-label">GREENPLUM_CHUNK_SIZE:</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" id="GREENPLUM_CHUNK_SIZE" value="{{ settings['GREENPLUM_CHUNK_SIZE'] }}">
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <div class="form-group row">
+                <div class="col-sm-2">
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
