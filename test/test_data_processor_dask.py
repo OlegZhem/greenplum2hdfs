@@ -1,6 +1,6 @@
 import dask.dataframe as dd
 import pandas as pd
-from src.data_processor_dask import transform_data_frame
+from src.data_processor_dask import *
 import pytest
 
 def test_remove_duplicates():
@@ -72,6 +72,70 @@ def test_convert_from_string_column4():
     #df = dd.DataFrame(data)
     processed_df = transform_data_frame(df).compute()
     assert len(processed_df) == 3
+
+@pytest.fixture
+def sample_ddf():
+    """Creates a sample Dask DataFrame with 4 different hours and varying row counts."""
+    data = {
+        "column1": [
+            1.0, 2.0, 100.0, 4.0,  # 10:00 AM
+            10.0, 20.0, 30.0, 40.0, 90.0,  # 11:00 AM
+            5.0, 15.0, 40.0,  # 12:00 PM
+            8.0, 25.0  # 01:00 PM
+        ],
+        "column2": [
+            5.0, 10.0, 50.0, 100.0,  # 10:00 AM
+            2.0, 8.0, 30.0, 35.0, 90.0,  # 11:00 AM
+            1.0, 7.0, 50.0,  # 12:00 PM
+            9.0, 30.0  # 01:00 PM
+        ],
+        "column3": [
+            "A", "B", "A", "C",  # 10:00 AM (Unique: A, B, C)
+            "D", "E", "D", "F", "G",  # 11:00 AM (Unique: D, E, F, G)
+            "H", "I", "J",  # 12:00 PM (Unique: H, I, J)
+            "K", "L"  # 01:00 PM (Unique: K, L)
+        ],
+        "column4": pd.to_datetime([
+            "2024-03-02 10:05:00", "2024-03-02 10:15:00", "2024-03-02 10:45:00", "2024-03-02 10:55:00",  # 10:00 AM
+            "2024-03-02 11:05:00", "2024-03-02 11:15:00", "2024-03-02 11:25:00", "2024-03-02 11:35:00", "2024-03-02 11:45:00",  # 11:00 AM
+            "2024-03-02 12:05:00", "2024-03-02 12:15:00", "2024-03-02 12:25:00",  # 12:00 PM
+            "2024-03-02 13:05:00", "2024-03-02 13:15:00"  # 01:00 PM
+        ])
+    }
+
+    pdf = pd.DataFrame(data)
+    return dd.from_pandas(pdf, npartitions=2)  # Convert to Dask DataFrame
+
+def test_aggregate_data_frame(sample_ddf):
+    """Tests the aggregation function with multiple hours."""
+    agg_ddf = aggregate_data_frame(sample_ddf)
+
+    # Convert to Pandas for testing correctness
+    result_df = agg_ddf.compute()
+    #print(result_df.to_dict())
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+    # Expected output (ensuring mean and median are different)
+    expected_data = {
+        "hour": [
+            pd.Timestamp("2024-03-02 10:00:00"),
+            pd.Timestamp("2024-03-02 11:00:00"),
+            pd.Timestamp("2024-03-02 12:00:00"),
+            pd.Timestamp("2024-03-02 13:00:00"),
+        ],
+        "unique_values_count": [3, 4, 3, 2],  # Unique values in column3 per hour
+        "mean_column1": [26.75, 38.0, 20.0, 16.5],
+        "median_column1": [3.0, 30.0, 15.0, 16.5],
+        "mean_column2": [41.250000, 33.00000, 19.333333, 19.50000],
+        "median_column2": [30.0, 30.0, 7.0, 19.5],
+    }
+
+    expected_df = pd.DataFrame(expected_data)
+
+    # Ensure aggregated DataFrame matches expected results
+    pd.testing.assert_frame_equal(result_df.reset_index().round(2), expected_df.round(2))
+
 
 # Run the tests
 if __name__ == "__main__":

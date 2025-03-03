@@ -56,6 +56,32 @@ def load_query_with_dask_sqlalchemy(sql, npartitions=10, **kwargs):
     ddf = dd.read_sql_query( sql, con=connection_uri, npartitions=npartitions)
     return ddf
 
+def aggregate_data_frame(ddf):
+    # Convert datetime column to hourly format
+    ddf["hour"] = ddf["column4"].dt.floor("H")  # Truncate to the hour
+
+    # Perform aggregations
+    agg_df = ddf.groupby("hour").agg({
+        "column3": "nunique",  # Count of unique values
+        "column1": ["mean", "median"],  # Mean and median for column1
+        "column2": ["mean", "median"]  # Mean and median for column2
+    })
+
+    # Rename columns for clarity
+    agg_df.columns = ["unique_values_count", "mean_column1", "median_column1", "mean_column2", "median_column2"]
+
+    return agg_df
+
+def merge_with_aggregated(ddf, agg_ddf):
+    # Ensure 'hour' column exists in original DataFrame
+    ddf["hour"] = ddf["column4"].dt.floor("H")
+
+    # Perform a left join on "hour" column
+    merged_ddf = ddf.merge(agg_ddf, on="hour", how="left")
+
+    return merged_ddf
+
+
 if __name__ == "__main__":
 
     # Usage example

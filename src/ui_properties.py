@@ -22,7 +22,7 @@ DEFAULT_SETTINGS = {
         "user": "your_user",
         "password": "your_password"
     },
-    "GREENPLUM_TABLE_NAME": "table1",
+    "GREENPLUM_TABLE_NAME": "your_table",
     "DASK_PARTITIONS": 10,
     "GREENPLUM_CHUNK_SIZE": 1000
 }

@@ -43,6 +43,36 @@ def from_csv_transform_dask_to_csv():
         logger.error("Exception:", exc_info=e)
         raise
 
+def from_csv_aggregate_dask_to_csv():
+    try:
+        with Client() as client:
+            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
+                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
+                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
+                with ProgressBar():
+                    df_processed = dpd.aggregate_data_frame(df_dask).compute()
+                saver.save(df_processed)
+            logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+    except Exception as e:
+        logger.error("Exception:", exc_info=e)
+        raise
+
+def from_csv_full_dask_to_csv():
+    try:
+        with Client() as client:
+            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
+                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
+                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
+                with ProgressBar():
+                    df_tran = dpd.transform_data_frame(df_dask)
+                    df_agg = dpd.aggregate_data_frame(df_tran)
+                    df_processed = dpd.merge_with_aggregated(df_tran, df_agg).compute()
+                saver.save(df_processed)
+            logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+    except Exception as e:
+        logger.error("Exception:", exc_info=e)
+        raise
+
 def from_greenplum_transform_pandas_to_csv():
     try:
         with SaverCSV(settings["OUT_PANDAS_CSV_FILE_PATH"]) as saver:

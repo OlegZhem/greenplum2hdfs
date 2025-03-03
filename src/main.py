@@ -16,6 +16,11 @@ class DataTransformer(StrEnum):
     PANDAS = 'PANDAS'
     DASK = 'DASK'
 
+class DataTransformerDask(StrEnum):
+    TRANSFORM = 'TRANSFORM'
+    AGGREGATE = 'AGGREGATE'
+    FULL = 'FULL'
+
 class DataDestination(StrEnum):
     CSV = 'CSV'
     HDFS = 'HDFS'
@@ -43,6 +48,31 @@ def process(data_source, data_transformer, data_destination):
                 from_greenplum_table_transform_dask_to_csv()
             else:
                 pass
+
+def process_pandas(data_source, data_destination):
+    if data_source == DataSource.CSV:
+        if data_destination == DataDestination.CSV:
+            from_csv_transform_pandas_to_csv()
+        else:
+            pass
+    else:
+        if data_destination == DataDestination.CSV:
+            from_greenplum_transform_pandas_to_csv()
+        else:
+            pass
+
+
+def process_dask(data_source, data_transformer, data_destination):
+    if data_source == DataSource.CSV:
+        if data_destination == DataDestination.CSV:
+            from_csv_full_dask_to_csv()
+        else:
+            pass
+    else:
+        if data_destination == DataDestination.CSV:
+            from_greenplum_transform_dask_to_csv()
+        else:
+            pass
 
 
 if __name__ == "__main__":
