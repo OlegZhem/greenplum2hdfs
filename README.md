@@ -16,6 +16,7 @@ A test Python project. This project moves data from a simulated Greenplum table 
   - `column2`: `float` (random distribution)
   - `column3`: `string` (alphanumeric characters)
   - `column4`: `date` (timestamp containing several days)
+Table contains 200 million rows  
 
 ### Target: HDFS Storage
 - Data will be stored in HDFS after processing.

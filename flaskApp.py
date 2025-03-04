@@ -2,6 +2,25 @@ from flask import Flask, render_template, request, jsonify
 from src.ui_properties import settings, save_settings
 from src.main import *
 
+import logging
+import sys
+from pathlib import Path
+
+# Create a formatter
+_formatter = logging.Formatter('[%(asctime)s] %(message)s')
+_formatter.default_msec_format = '%s.%03d'
+# Create handlers
+_stdout_handler = logging.StreamHandler(sys.stdout)
+_stdout_handler.setFormatter(_formatter)
+_log_file = "logs/greenplum2hdfs.log"
+_file_handler = logging.FileHandler(_log_file)
+_file_handler.setFormatter(_formatter)
+# Configure logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(_stdout_handler)
+logger.addHandler(_file_handler)
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -89,6 +108,35 @@ def run_dask_process():
 
         # Run the process function.
         process_dask(ds_enum, DataTransformerDask.FULL, dd_enum)
+
+        return jsonify({"status": "Process completed successfully."})
+    except ValueError:
+        return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
+    except Exception as e:
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+
+@app.route('/histogram')
+def histogram():
+    return render_template('histogram.html')
+
+
+@app.route('/histogram/process', methods=['POST'])
+def run_histogram_process():
+    try:
+        data = request.get_json()
+        logger.info(f'{request.base_url} {data}')
+        ds = data.get("data_source")
+        column = data.get("data_column")
+
+        # Convert string values to enum members.
+        try:
+            ds_enum = DataSource(ds)
+        except Exception as e:
+            return jsonify({"error": "Invalid parameters provided."}), 400
+
+        # Run the process function.
+        create_histogram(ds_enum, column)
 
         return jsonify({"status": "Process completed successfully."})
     except ValueError:

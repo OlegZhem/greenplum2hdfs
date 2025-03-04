@@ -70,10 +70,15 @@ def process_dask(data_source, data_transformer, data_destination):
             pass
     else:
         if data_destination == DataDestination.CSV:
-            from_greenplum_transform_dask_to_csv()
+            from_greenplum_table_transform_dask_to_csv()
         else:
             pass
 
+def create_histogram(data_source, column):
+    if data_source == DataSource.CSV:
+        pass
+    else:
+        pass
 
 if __name__ == "__main__":
     process(DataSource.CSV, DataTransformer.DASK, DataDestination.CSV)

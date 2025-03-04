@@ -74,7 +74,7 @@ def test_convert_from_string_column4():
     assert len(processed_df) == 3
 
 @pytest.fixture
-def sample_ddf():
+def trans_df():
     """Creates a sample Dask DataFrame with 4 different hours and varying row counts."""
     data = {
         "column1": [
@@ -103,21 +103,12 @@ def sample_ddf():
         ])
     }
 
-    pdf = pd.DataFrame(data)
-    return dd.from_pandas(pdf, npartitions=2)  # Convert to Dask DataFrame
+    return pd.DataFrame(data)
 
-def test_aggregate_data_frame(sample_ddf):
-    """Tests the aggregation function with multiple hours."""
-    agg_ddf = aggregate_data_frame(sample_ddf)
-
-    # Convert to Pandas for testing correctness
-    result_df = agg_ddf.compute()
-    #print(result_df.to_dict())
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(result_df)
-
-    # Expected output (ensuring mean and median are different)
-    expected_data = {
+@pytest.fixture
+def agg_df():
+    """Creates a sample Aggregation. Mean and median are different"""
+    data = {
         "hour": [
             pd.Timestamp("2024-03-02 10:00:00"),
             pd.Timestamp("2024-03-02 11:00:00"),
@@ -131,11 +122,35 @@ def test_aggregate_data_frame(sample_ddf):
         "median_column2": [30.0, 30.0, 7.0, 19.5],
     }
 
-    expected_df = pd.DataFrame(expected_data)
+    return pd.DataFrame(data)
+
+
+def test_aggregate_data_frame(trans_df, agg_df):
+    """Tests the aggregation function with multiple hours."""
+    agg_ddf = aggregate_data_frame(dd.from_pandas(trans_df, npartitions=2))
+
+    # Convert to Pandas for testing correctness
+    result_df = agg_ddf.compute()
+    #print(result_df.to_dict())
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
 
     # Ensure aggregated DataFrame matches expected results
-    pd.testing.assert_frame_equal(result_df.reset_index().round(2), expected_df.round(2))
+    pd.testing.assert_frame_equal(result_df.reset_index().round(2), agg_df.round(2))
 
+def test_join_data_frames(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    agg_ddf = dd.from_pandas(agg_df, npartitions=2)
+
+    result_ddf = merge_with_aggregated(trans_ddf, agg_ddf)
+
+    # Convert to Pandas for testing correctness
+    result_df = agg_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+    assert result_df.len() == 14
+    assert len(result_df.columns) == 10
 
 # Run the tests
 if __name__ == "__main__":
