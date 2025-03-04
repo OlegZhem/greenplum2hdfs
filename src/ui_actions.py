@@ -76,7 +76,7 @@ def from_greenplum_table_transform_dask_to_csv():
                 df_processed = dpd.merge_with_aggregated(df_tran, df_agg)
                 progress(client.persist(df_processed))
                 df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
-    logger.info(f'finish processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+        logger.info(f'finish processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise
