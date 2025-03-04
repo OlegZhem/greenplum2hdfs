@@ -117,7 +117,7 @@ def run_dask_process():
 
 
 @app.route('/histogram')
-def histogram():
+def run_histogram():
     return render_template('histogram.html')
 
 
