@@ -4,7 +4,7 @@ import sys
 import pandas as pd
 from dask import dataframe as dd
 from dask.diagnostics import ProgressBar
-from distributed import Client
+from distributed import Client, progress
 
 import src.data_processor_pandas as dpp
 import src.data_processor_dask as dpd
@@ -12,9 +12,12 @@ import src.greenplum_connector as gpc
 import src.queries as queries
 from src.ui_properties import settings
 from src.saver_csv import SaverCSV
+from src import _stdout_handler, _file_handler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+logger.addHandler(_stdout_handler)
+logger.addHandler(_file_handler)
 
 
 def from_csv_transform_pandas_to_csv():
@@ -29,45 +32,16 @@ def from_csv_transform_pandas_to_csv():
         logger.error("Exception:", exc_info=e)
         raise
 
-def from_csv_transform_dask_to_csv():
-    try:
-        with Client() as client:
-            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
-                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
-                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
-                with ProgressBar():
-                    df_processed = dpd.transform_data_frame(df_dask).compute()
-                saver.save(df_processed)
-            logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
-    except Exception as e:
-        logger.error("Exception:", exc_info=e)
-        raise
-
-def from_csv_aggregate_dask_to_csv():
-    try:
-        with Client() as client:
-            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
-                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
-                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
-                with ProgressBar():
-                    df_processed = dpd.aggregate_data_frame(df_dask).compute()
-                saver.save(df_processed)
-            logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
-    except Exception as e:
-        logger.error("Exception:", exc_info=e)
-        raise
-
 def from_csv_full_dask_to_csv():
     try:
         with Client() as client:
-            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
-                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
-                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
-                with ProgressBar():
-                    df_tran = dpd.transform_data_frame(df_dask)
-                    df_agg = dpd.aggregate_data_frame(df_tran)
-                    df_processed = dpd.merge_with_aggregated(df_tran, df_agg).compute()
-                saver.save(df_processed)
+            logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
+            df_tran = dpd.transform_data_frame(df_dask)
+            df_agg = dpd.aggregate_data_frame(df_tran)
+            df_processed = dpd.merge_with_aggregated(df_tran, df_agg)
+            progress(client.persist(df_processed))
+            df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
             logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
         logger.error("Exception:", exc_info=e)
@@ -91,14 +65,18 @@ def from_greenplum_transform_pandas_to_csv():
 def from_greenplum_table_transform_dask_to_csv():
     try:
         with Client() as client:
-            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
                 logger.info(f'start processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} in {settings["DASK_PARTITIONS"]} partitions')
-                with ProgressBar():
-                    df_dask = dpd.load_table_with_dask_sqlalchemy(
-                        settings["GREENPLUM_TABLE_NAME"], "column4", settings["DASK_PARTITIONS"], **settings["GREENPLUM_CONNECTION_PARAMS"])
-                    df_processed = dpd.transform_data_frame(df_dask).compute()
-                saver.save(df_processed)
-            logger.info(f'finish processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+                df_dask = dpd.load_table_with_dask_sqlalchemy(
+                    settings["GREENPLUM_TABLE_NAME"],
+                    "column4",
+                    settings["DASK_PARTITIONS"],
+                    **settings["GREENPLUM_CONNECTION_PARAMS"])
+                df_tran = dpd.transform_data_frame(df_dask)
+                df_agg = dpd.aggregate_data_frame(df_tran)
+                df_processed = dpd.merge_with_aggregated(df_tran, df_agg)
+                progress(client.persist(df_processed))
+                df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
+    logger.info(f'finish processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise
@@ -106,13 +84,17 @@ def from_greenplum_table_transform_dask_to_csv():
 def from_greenplum_query_load_dask_to_csv():
     try:
         with Client() as client:
-            with SaverCSV(settings["OUT_DASK_CSV_FILE_PATH"]) as saver:
-                logger.info(f'start processing greenplum query {queries.QUERY_TRANSFORM_1} in {settings["DASK_PARTITIONS"]} partitions')
-                with ProgressBar():
-                    df_dask = dpd.load_query_with_dask_sqlalchemy(
-                        queries.create_selectable2(settings["GREENPLUM_TABLE_NAME"]), settings["DASK_PARTITIONS"], **settings["GREENPLUM_CONNECTION_PARAMS"])
-                saver.save(df_dask)
+            logger.info(f'start processing greenplum query {queries.QUERY_TRANSFORM_1} in {settings["DASK_PARTITIONS"]} partitions')
+            df_processed = dpd.load_query_with_dask_sqlalchemy(
+                queries.create_selectable2(settings["GREENPLUM_TABLE_NAME"]),
+                settings["DASK_PARTITIONS"],
+                **settings["GREENPLUM_CONNECTION_PARAMS"])
+            progress(client.persist(df_processed))
+            df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
             logger.info(f'finish processing greenplum query {queries.QUERY_TRANSFORM_1} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise
+
+if __name__ == "__main__":
+    from_csv_full_dask_to_csv()

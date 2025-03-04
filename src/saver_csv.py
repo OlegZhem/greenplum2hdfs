@@ -9,11 +9,6 @@ from src.saver import Saver
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-sh = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('[%(asctime)s] %(message)s')
-formatter.default_msec_format = '%s.%03d'
-sh.setFormatter(formatter)
-logger.addHandler(sh)
 
 
 class SaverCSV(Saver):

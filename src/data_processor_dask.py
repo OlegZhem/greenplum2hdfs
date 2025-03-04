@@ -58,7 +58,7 @@ def load_query_with_dask_sqlalchemy(sql, npartitions=10, **kwargs):
 
 def aggregate_data_frame(ddf):
     # Convert datetime column to hourly format
-    ddf["hour"] = ddf["column4"].dt.floor("H")  # Truncate to the hour
+    ddf["hour"] = ddf["column4"].dt.floor("h")  # Truncate to the hour
 
     # Perform aggregations
     agg_df = ddf.groupby("hour").agg({
@@ -74,7 +74,7 @@ def aggregate_data_frame(ddf):
 
 def merge_with_aggregated(ddf, agg_ddf):
     # Ensure 'hour' column exists in original DataFrame
-    ddf["hour"] = ddf["column4"].dt.floor("H")
+    ddf["hour"] = ddf["column4"].dt.floor("h")
 
     # Perform a left join on "hour" column
     merged_ddf = ddf.merge(agg_ddf, on="hour", how="left")

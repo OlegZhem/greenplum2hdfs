@@ -25,30 +25,6 @@ class DataDestination(StrEnum):
     CSV = 'CSV'
     HDFS = 'HDFS'
 
-def process(data_source, data_transformer, data_destination):
-    if data_source == DataSource.CSV:
-        if data_transformer == DataTransformer.PANDAS:
-            if data_destination == DataDestination.CSV:
-                from_csv_transform_pandas_to_csv()
-            else:
-                pass
-        else:
-            if data_destination == DataDestination.CSV:
-                from_csv_transform_dask_to_csv()
-            else:
-                pass
-    else:
-        if data_transformer == DataTransformer.PANDAS:
-            if data_destination == DataDestination.CSV:
-                from_greenplum_transform_pandas_to_csv()
-            else:
-                pass
-        else:
-            if data_destination == DataDestination.CSV:
-                from_greenplum_table_transform_dask_to_csv()
-            else:
-                pass
-
 def process_pandas(data_source, data_destination):
     if data_source == DataSource.CSV:
         if data_destination == DataDestination.CSV:
@@ -76,9 +52,9 @@ def process_dask(data_source, data_transformer, data_destination):
 
 def create_histogram(data_source, column):
     if data_source == DataSource.CSV:
-        pass
+        from_csv_dask_histogram()
     else:
-        pass
+        from_greenplum_dask_histogram()
 
 if __name__ == "__main__":
     process(DataSource.CSV, DataTransformer.DASK, DataDestination.CSV)

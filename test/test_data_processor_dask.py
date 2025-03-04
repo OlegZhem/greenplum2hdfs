@@ -145,11 +145,11 @@ def test_join_data_frames(trans_df, agg_df):
     result_ddf = merge_with_aggregated(trans_ddf, agg_ddf)
 
     # Convert to Pandas for testing correctness
-    result_df = agg_ddf.compute()
+    result_df = result_ddf.compute()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(result_df)
 
-    assert result_df.len() == 14
+    assert result_df.shape[0] == 14
     assert len(result_df.columns) == 10
 
 # Run the tests
