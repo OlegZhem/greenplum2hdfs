@@ -1,5 +1,6 @@
 import dask.dataframe as dd
 import pandas as pd
+import numpy as np
 from src.data_processor_dask import *
 import pytest
 
@@ -151,6 +152,22 @@ def test_join_data_frames(trans_df, agg_df):
 
     assert result_df.shape[0] == 14
     assert len(result_df.columns) == 10
+
+def test_get_histogram():
+    data = {
+           "column2": [
+            6.0, 11.0, 51.0, 101.0,  12.0, 18.0, 31.0, 36.0, 91.0,  11.0, 17.0, 56.0,  19.0, 31.0,
+            7.0, 12.0, 52.0, 100.0,  22.0, 28.0, 32.0, 37.0, 92.0,  12.0, 27.0, 54.0,  29.0, 32.0,
+            5.0, 10.0, 50.0, 100.0,   2.0,  8.0, 30.0, 35.0, 90.0,   1.0,  7.0, 50.0,   9.0, 30.0
+        ]}
+    ddf = dd.from_pandas(pd.DataFrame(data), npartitions=2)
+    hist, bins = get_histogram(ddf, "column2")
+    print(hist.compute())
+    np.testing.assert_array_equal( hist.compute(), np.array([9, 8, 6, 7, 2, 4, 0, 0, 1, 5]))
+    print(bins)
+    print(type(bins))
+    np.testing.assert_array_equal( bins,  np.array([  1.,  11.,  21.,  31.,  41.,  51.,  61.,  71.,  81.,  91., 101.]))
+
 
 # Run the tests
 if __name__ == "__main__":

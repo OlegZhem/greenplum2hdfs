@@ -48,7 +48,7 @@ if __name__ == "__main__":
         'password': 'your_password'
     }
     GREENPLUM_CHUNK_SIZE = 1000
-    QUERY = 'SELECT * FROM your_table'
+    QUERY = 'SELECT * FROM test_table'
 
     # Use the context manager to handle the connection
     with database_connection(**GREENPLUM_CONNECTION_PARAMS) as conn:

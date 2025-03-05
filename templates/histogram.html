@@ -18,6 +18,7 @@
 
         var dataSource = document.getElementById("dataSource").value;
         var processColumn = document.getElementById("column").value;
+        var bins = document.getElementById("bins").value;
 
         var xhr = new XMLHttpRequest();
         xhr.open("POST", "/histogram/process", true);
@@ -37,7 +38,8 @@
         };
         xhr.send(JSON.stringify({
             data_source: dataSource,
-            data_column: processColumn
+            data_column: processColumn,
+            data_bins: bins
         }));
     }
     </script>
@@ -68,9 +70,15 @@
                         <label for="column" class="col-auto form-label text-end">Column:</label>
                         <div class="col-auto">
                             <select id="column" class="form-select w-auto">
-                                <option value="Column1">Column1</option>
-                                <option value="Column2">Column2</option>
+                                <option value="column1">Column1</option>
+                                <option value="column2">Column2</option>
                             </select>
+                        </div>
+                    </div>
+                   <div class="row mb-2 align-items-center">
+                        <label for="bins" class="col-auto form-label text-end">Bins:</label>
+                        <div class="col-auto">
+                            <input type="number" class="form-control w-auto" id="bins" value="10">
                         </div>
                     </div>
                     <button id="startButton" type="button" class="btn btn-primary mt-2" onclick="startProcess()">Start</button>

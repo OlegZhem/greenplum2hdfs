@@ -128,20 +128,23 @@ def run_histogram_process():
         logger.info(f'{request.base_url} {data}')
         ds = data.get("data_source")
         column = data.get("data_column")
+        bins = data.get("data_bens")
 
         # Convert string values to enum members.
         try:
             ds_enum = DataSource(ds)
         except Exception as e:
+            logger.error("convert to DataSource", exc_info=e)
             return jsonify({"error": "Invalid parameters provided."}), 400
 
         # Run the process function.
-        create_histogram(ds_enum, column)
+        create_histogram(ds_enum, column, bins)
 
         return jsonify({"status": "Process completed successfully."})
     except ValueError:
         return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
     except Exception as e:
+        logger.error("convert to DataSource", exc_info=e)
         return jsonify({"error": f"An error occurred: {str(e)}"}), 500
 
 

@@ -1,10 +1,10 @@
-CREATE TABLE your_table (
+CREATE TABLE test_table (
     column1 FLOAT,
     column2 FLOAT,
     column3 VARCHAR(50),
     column4 TIMESTAMP
 );
-INSERT INTO your_table (column1, column2, column3, column4) VALUES
+INSERT INTO test_table (column1, column2, column3, column4) VALUES
 -- Hour 1: 3 rows (odd number of rows), skewed data for column1 and column2
 (1.0, 10.0, 'abc123', '2023-10-01 11:00:00'),  -- Low value
 (1.5, 10.5, 'def456', '2023-10-01 11:15:00'),  -- Medium value

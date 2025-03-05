@@ -1,10 +1,10 @@
-CREATE TABLE your_table (
+CREATE TABLE test_table (
     column1 FLOAT,
     column2 FLOAT,
     column3 VARCHAR(50),
     column4 TIMESTAMP
 );
-INSERT INTO your_table (column1, column2, column3, column4) VALUES
+INSERT INTO test_table (column1, column2, column3, column4) VALUES
 (1.23, 4.56, 'abc123', '2023-10-01 03:00:00'),
 (2.34, 5.67, 'def456', '2023-10-01 01:30:00'),
 (3.45, 6.78, '', '2023-10-03 04:00:00'),

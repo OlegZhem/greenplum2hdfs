@@ -1,6 +1,9 @@
 import dask.dataframe as dd
+import dask.array as da
 from dask.distributed import Client
 from dask.diagnostics import ProgressBar
+from distributed import progress
+import pandas as pd
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.sql import select
@@ -81,10 +84,16 @@ def merge_with_aggregated(ddf, agg_ddf):
 
     return merged_ddf
 
+def get_histogram(ddf, column, bins=10):
+    da_dask = ddf[column].to_dask_array(lengths=True)
+    max = da_dask.max().compute()
+    min = da_dask.min().compute()
+    return da.histogram(da_dask, bins=bins, range=[min, max])
 
-if __name__ == "__main__":
 
-    # Usage example
+ # Usage example
+
+def usage_greenplum():
     GREENPLUM_CONNECTION_PARAMS = {
         'host': 'your_host',
         'port': 'your_port',
@@ -95,5 +104,23 @@ if __name__ == "__main__":
     BOCK_SIZE = "64MB"
     with Client() as client:
         df_dask = load_table_with_dask_sqlalchemy("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
-        with ProgressBar():
-            df_processed = transform_data_frame(df_dask).compute()
+        df_processed = transform_data_frame(df_dask).compute()
+        progress(client.persist(df_processed))
+    result_df = df_dask.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+
+if __name__ == "__main__":
+
+    column = 'column2'
+    df_dask = dd.read_csv('../data/test_data_2M.csv', blocksize='64MB', usecols=[column])
+    hist, bins = get_histogram(df_dask, column)
+    print(hist.compute())
+    print(bins)
+
+    #result_df = df_dask.compute()
+    #with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #    print(result_df)
+
+

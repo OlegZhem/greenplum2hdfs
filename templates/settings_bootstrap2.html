@@ -43,7 +43,7 @@
         <form onsubmit="event.preventDefault(); saveSettings();">
             <!-- General Settings -->
             <div class="form-group row">
-                <label for="IN_CSV_FILE_PATH" class="col-sm-2 col-form-label">IN_CSV_FILE_PATH:</label>
+                <label for="IN_CSV_FILE_PATH" class="col-sm-2 col-form-label">CSV source data file:</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="IN_CSV_FILE_PATH" value="{{ settings['IN_CSV_FILE_PATH'] }}">
                 </div>
@@ -55,7 +55,7 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label for="OUT_PANDAS_CSV_FILE_PATH" class="col-sm-2 col-form-label">OUT_PANDAS_CSV_FILE_PATH:</label>
+                <label for="OUT_PANDAS_CSV_FILE_PATH" class="col-sm-2 col-form-label">CSV destination file for Pandas:</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="OUT_PANDAS_CSV_FILE_PATH" value="{{ settings['OUT_PANDAS_CSV_FILE_PATH'] }}">
                 </div>
@@ -67,7 +67,7 @@
                 </div>
             </div>
             <div class="form-group row">
-                <label for="OUT_DASK_CSV_FILE_PATH" class="col-sm-2 col-form-label">OUT_DASK_CSV_FILE_PATH:</label>
+                <label for="OUT_DASK_CSV_FILE_PATH" class="col-sm-2 col-form-label">CSV destination file for Dask:</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="OUT_DASK_CSV_FILE_PATH" value="{{ settings['OUT_DASK_CSV_FILE_PATH'] }}">
                 </div>

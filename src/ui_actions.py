@@ -86,12 +86,35 @@ def from_greenplum_query_load_dask_to_csv():
         with Client() as client:
             logger.info(f'start processing greenplum query {queries.QUERY_TRANSFORM_1} in {settings["DASK_PARTITIONS"]} partitions')
             df_processed = dpd.load_query_with_dask_sqlalchemy(
-                queries.create_selectable2(settings["GREENPLUM_TABLE_NAME"]),
+                queries.create_transformation_selectable2(settings["GREENPLUM_TABLE_NAME"]),
                 settings["DASK_PARTITIONS"],
                 **settings["GREENPLUM_CONNECTION_PARAMS"])
             progress(client.persist(df_processed))
             df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
             logger.info(f'finish processing greenplum query {queries.QUERY_TRANSFORM_1} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+    except Exception as e:
+        logger.error("An exception occurred:", exc_info=e)
+        raise
+
+def from_csv_dask_histogram(column, bins=10):
+    try:
+        with Client() as client:
+            logger.info(f'create histogram for {column} in {settings["IN_CSV_FILE_PATH"]} file')
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"], usecols=[column])
+            return dpd.get_histogram(df_dask, column, bins)
+    except Exception as e:
+        logger.error("An exception occurred:", exc_info=e)
+        raise
+
+def from_greenplum_dask_histogram(column, bins=10):
+    try:
+        with Client() as client:
+            logger.info(f'create histogram for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
+            df_dask = dpd.load_query_with_dask_sqlalchemy(
+                queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
+                settings["DASK_PARTITIONS"],
+                **settings["GREENPLUM_CONNECTION_PARAMS"])
+            return dpd.get_histogram(df_dask, column, bins)
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise
