@@ -1,3 +1,4 @@
+import numpy as np
 from flask import Flask, render_template, request, jsonify
 from src.ui_properties import settings, save_settings
 from src.main import *
@@ -128,19 +129,36 @@ def run_histogram_process():
         logger.info(f'{request.base_url} {data}')
         ds = data.get("data_source")
         column = data.get("data_column")
-        bins = data.get("data_bens")
+        bins = data.get("data_bins")
 
-        # Convert string values to enum members.
+        # Convert string values.
         try:
             ds_enum = DataSource(ds)
+            bins_int = int(bins)
         except Exception as e:
             logger.error("convert to DataSource", exc_info=e)
             return jsonify({"error": "Invalid parameters provided."}), 400
 
         # Run the process function.
-        create_histogram(ds_enum, column, bins)
+        hist, bin_edges = create_histogram(ds_enum, column, bins_int)
+        logger.debug(f'hist {type(hist)}: {hist}')
+        logger.debug(f'bins {type(bin_edges)}: {bin_edges}')
 
-        return jsonify({"status": "Process completed successfully."})
+        hist_np = hist.compute()  # Convert to NumPy array
+        # Normalize the histogram (Convert counts to percentage)
+        total_count = np.sum(hist_np)
+        hist_normalized = (hist_np / total_count) * 100
+
+        hist_list = hist_normalized.tolist()
+        bins_list = bin_edges.tolist()
+        logger.debug(f'hist list : {hist_list}')
+        logger.debug(f'bins list: {bins_list}')
+
+        return jsonify({
+            "status": "Process completed successfully.",
+            "hist": hist_list,
+            "bins": bins_list
+        })
     except ValueError:
         return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
     except Exception as e:

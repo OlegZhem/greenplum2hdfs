@@ -52,9 +52,10 @@ def process_dask(data_source, data_transformer, data_destination):
 
 def create_histogram(data_source, column, bins=10):
     if data_source == DataSource.CSV:
-        from_csv_dask_histogram(column, bins)
+        return from_csv_dask_histogram(column, bins)
     else:
-        from_greenplum_dask_histogram(column, bins)
+        return from_greenplum_dask_histogram(column, bins)
 
 if __name__ == "__main__":
-    process(DataSource.CSV, DataTransformer.DASK, DataDestination.CSV)
+    pass
+    #process(DataSource.CSV, DataTransformer.DASK, DataDestination.CSV)

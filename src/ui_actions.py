@@ -16,8 +16,8 @@ from src import _stdout_handler, _file_handler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logger.addHandler(_stdout_handler)
-logger.addHandler(_file_handler)
+#logger.addHandler(_stdout_handler)
+#logger.addHandler(_file_handler)
 
 
 def from_csv_transform_pandas_to_csv():
