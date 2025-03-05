@@ -90,6 +90,12 @@ def get_histogram(ddf, column, bins=10):
     min = da_dask.min().compute()
     return da.histogram(da_dask, bins=bins, range=[min, max])
 
+def get_statistic(ddf, column):
+    da_dask = ddf[column].to_dask_array(lengths=True)
+    mean = da_dask.mean().compute()
+    std = da_dask.std().compute()
+    return mean, std
+
 
  # Usage example
 

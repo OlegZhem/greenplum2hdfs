@@ -97,34 +97,34 @@ function drawHistogram(hist, bins) {
 
 </head>
 <body class="bg-light container mt-5">
-                 <h3 class="mb-3">Create Histogram</h3>
+                 <h3 class="mb-3">Histogram</h3>
 
                 <form>
-                    <div class="form-group col-md-4">
-                        <label for="dataSource" class="col-auto form-label text-end">Data Source:</label>
-                        <div class="col-auto">
-                            <select id="dataSource" class="form-select w-auto">
-                                <option value="CSV">CSV</option>
-                                <option value="GREENPLUM">GREENPLUM</option>
-                            </select>
-                        </div>
+                    <div class="form-group row">
+                            <label for="dataSource" class="col-sm-2 col-form-label">Data Source:</label>
+                            <div class="col-sm-10">
+                                <select id="dataSource" class="form-control">
+                                    <option value="CSV">CSV</option>
+                                    <option value="GREENPLUM">GREENPLUM</option mx-sm-3>
+                                </select>
+                            </div>
                     </div>
-                    <div class="form-group col-md-4">
-                        <label for="column" class="col-auto form-label text-end">Column:</label>
-                        <div class="col-auto">
-                            <select id="column" class="form-select w-auto">
-                                <option value="column1">Column1</option>
-                                <option value="column2">Column2</option>
-                            </select>
-                        </div>
+                    <div class="form-group row">
+                            <label for="column" class="col-sm-2 col-form-label">Column:</label>
+                            <div class="col-sm-10">
+                                <select id="column" class="form-control">
+                                    <option value="column1">Column1</option>
+                                    <option value="column2">Column2</option>
+                                </select>
+                            </div>
                     </div>
-                   <div class="form-group col-md-4">
-                        <label for="bins" class="col-auto form-label text-end">Bins:</label>
-                        <div class="col-auto">
-                            <input type="number" class="form-control w-auto" id="bins" value="10">
-                        </div>
+                    <div class="form-group row">
+                            <label for="bins" class="col-sm-2 col-form-label">Bins:</label>
+                            <div class="col-sm-10">
+                                <input type="number" class="form-control" id="bins" value="10">
+                            </div>
                     </div>
-                    <div class="form-row">
+                    <div class="form-group row">
                         <div class="form-group col-lg-12">
                             <button id="startButton" type="button" class="btn btn-primary mt-2" onclick="startProcess()">Start</button>
                         </div>

@@ -29,9 +29,10 @@ def generate_row(current_date):
     column1 = np.random.normal(loc=80, scale=20)
     column1 = max(25.0, min(column1, 135.0))  # Clamp values to the range [25, 135]
 
-    # Generate column2: normally distributed number between 5 and 45 + random number between 15 and 35
-    column2 = np.random.normal(loc=25, scale=7)
-    column2 = max(5.0, min(column2, 45.0)) + 15.0 + 20.0 * random.random()
+    # Generate column2: exponential distributed
+    column2 = np.random.exponential(scale=1.5)
+    column2 = 25.0 + column2 * 15.0
+    column2 = max(25.0, min(column2, 135.0))  # Clamp values to the range [25, 135]
 
     # Generate column3: random string with 75% chance of containing digits and letters
     if random.random() < 0.75:
@@ -80,10 +81,10 @@ def generate_and_save_data(num_rows, rows_per_day, start_date, filename):
         logger.info(f"file {file_name} generated")
 
 if __name__ == "__main__":
-    num_rows = 200_000_000  # Total number of rows to generate
-    rows_per_day = 5_000_000  # Number of rows per day
+    num_rows = 2_000_000  # Total number of rows to generate
+    rows_per_day = 100_000  # Number of rows per day
     start_date = datetime(2025, 1, 1, 0, 0, 0)  # Start date and time (midnight)
-    file_name = 'data/test_data_200M.csv'
+    file_name = 'data/test_data_2M.csv'
     # Generate data and save to file
     generate_and_save_data(num_rows, rows_per_day, start_date, file_name)
     logger.info(f"File {file_name} successfully created. Generated {num_rows} rows.")
