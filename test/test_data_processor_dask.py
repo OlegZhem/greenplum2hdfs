@@ -174,11 +174,15 @@ def test_get_histogram(df_with_float_column):
 
 def test_statistic(df_with_float_column):
     ddf = dd.from_pandas(df_with_float_column, npartitions=2)
-    mean, std = get_statistic(ddf, "column")
+    mean, std, skew, kurtosis = get_statistic(ddf, "column")
     print(f' mean {type(mean)}: {mean}')
     assert mean == 34.61904761904762
     print(f' std {type(std)}: {std}')
     assert std == 29.12285338989229
+    print(f' skew {type(skew)}: {skew}')
+    assert skew == 1.089657343842855
+    print(f' kurtosis {type(kurtosis)}: {kurtosis}')
+    assert kurtosis == 0.14199121202643905
 
 
 # Run the tests

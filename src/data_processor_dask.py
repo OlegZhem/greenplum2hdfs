@@ -1,9 +1,11 @@
 import dask.dataframe as dd
 import dask.array as da
+from dask.array.stats import skew, kurtosis
 from dask.distributed import Client
 from dask.diagnostics import ProgressBar
 from distributed import progress
 import pandas as pd
+import scipy
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.sql import select
@@ -94,7 +96,9 @@ def get_statistic(ddf, column):
     da_dask = ddf[column].to_dask_array(lengths=True)
     mean = da_dask.mean().compute()
     std = da_dask.std().compute()
-    return mean, std
+    skew_val = skew(da_dask).compute()
+    kurtosis_val = kurtosis(da_dask).compute()
+    return mean, std, skew_val, kurtosis_val
 
 
  # Usage example
