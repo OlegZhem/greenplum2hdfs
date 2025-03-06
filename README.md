@@ -61,24 +61,24 @@ Table contains 200 million rows
 
 ---
 
-## Assumptions
-
-- `column4` contains timestamps spanning multiple days.
-- Test data is generated and stored in CSV files for local testing.
-
----
-
 ## Implementation
 
 ### Libraries Used
-- **[Pandas](https://pypi.org/project/pandas/)**: Used for data analysis and performance comparison.
 - **[Dask](https://pypi.org/project/dask/)**: Flexible parallel computing library for analytics. Main candidate for transformation and aggregation.
 - **[Flask](https://pypi.org/project/Flask/)**: Lightweight WSGI web application framework used to create the UI.
 
-### SQL Queries
-- SQL queries are stored in `src/queries.py`.
+| function         | file                               | method               |
+|------------------|------------------------------------|----------------------|
+| SQL Queries      | `src/queries.py`                   |                      |
+| SQL Queries test | `test/resources`                   |                      |
+| Transformation   | `src/dat_processor_dask.py`        | transform_data_frame |
+| Aggregation      | `src/dat_processor_dask.py`        | aggregate_data_frame |
+| Merge            | `src/dat_processor_dask.py`        | 
+| Processing test  | `test/test_data_processor_dask.py` |
+| Histogram        | `src/dat_processor_dask.py`        | get_histogram        |
+| UI endpoints     | `flaskApp.py`                      |
+| UI templates     | `templates/`                       |
 
----
 
 ## Dependencies
 

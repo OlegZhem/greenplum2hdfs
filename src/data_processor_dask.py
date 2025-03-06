@@ -34,7 +34,7 @@ def transform_data_frame(df):
 
     return df
 
-def load_table_with_dask_sqlalchemy(table_name, index_col, npartitions=10, **kwargs):
+def load_table_with_dask(table_name, index_col, npartitions=10, **kwargs):
     """
     Loads data from Greenplum into a Dask DataFrame using SQLAlchemy.
 
@@ -113,7 +113,7 @@ def usage_greenplum():
     }
     BOCK_SIZE = "64MB"
     with Client() as client:
-        df_dask = load_table_with_dask_sqlalchemy("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
+        df_dask = load_table_with_dask("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
         df_processed = transform_data_frame(df_dask).compute()
         progress(client.persist(df_processed))
     result_df = df_dask.compute()

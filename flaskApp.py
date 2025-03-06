@@ -28,37 +28,6 @@ app = Flask(__name__)
 def home():
     return render_template('index.html')
 
-@app.route('/transformation')
-def transform():
-    return render_template('transformation_bootstrap.html')
-
-
-@app.route('/transformation/process', methods=['POST'])
-def run_transform_process():
-    try:
-        data = request.get_json()
-        ds = data.get("data_source")
-        dt = data.get("data_transformer")
-        dd = data.get("data_destination")
-
-        # Convert string values to enum members.
-        try:
-            ds_enum = DataSource(ds)
-            dt_enum = DataTransformer(dt)
-            dd_enum = DataDestination(dd)
-        except Exception as e:
-            return jsonify({"error": "Invalid parameters provided."}), 400
-
-        # Run the process function.
-        process(ds_enum, dt_enum, dd_enum)
-
-        return jsonify({"status": "Process completed successfully."})
-    except ValueError:
-        return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
-    except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-
 @app.route('/pandas')
 def pandas():
     return render_template('processing_pandas.html')
@@ -158,6 +127,41 @@ def run_histogram_process():
             "status": "Process completed successfully.",
             "hist": hist_list,
             "bins": bins_list
+        })
+    except ValueError:
+        return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
+    except Exception as e:
+        logger.error("convert to DataSource", exc_info=e)
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/conf_int')
+def run_confidence_interval():
+    return render_template('confidence_interval.html')
+
+
+@app.route('/conf_int/calculate', methods=['POST'])
+def get_moments_process():
+    try:
+        data = request.get_json()
+        logger.info(f'{request.base_url} {data}')
+        ds = data.get("data_source")
+        column = data.get("data_column")
+
+        # Convert string values.
+        try:
+            ds_enum = DataSource(ds)
+        except Exception as e:
+            logger.error("convert to DataSource", exc_info=e)
+            return jsonify({"error": "Invalid parameters provided."}), 400
+
+        mean, std, skew_val, kurtosis_val = get_moments(ds_enum, column)
+
+        return jsonify({
+            "status": "Process completed successfully.",
+            "mean": mean,
+            "std": std,
+            "skew": skew_val,
+            "kurtosis": kurtosis_val,
         })
     except ValueError:
         return jsonify({"error": "Invalid selection. Please choose valid options."}), 400

@@ -66,7 +66,7 @@ def from_greenplum_table_transform_dask_to_csv():
     try:
         with Client() as client:
                 logger.info(f'start processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} in {settings["DASK_PARTITIONS"]} partitions')
-                df_dask = dpd.load_table_with_dask_sqlalchemy(
+                df_dask = dpd.load_table_with_dask(
                     settings["GREENPLUM_TABLE_NAME"],
                     "column4",
                     settings["DASK_PARTITIONS"],
@@ -115,6 +115,29 @@ def from_greenplum_dask_histogram(column, bins=10):
                 settings["DASK_PARTITIONS"],
                 **settings["GREENPLUM_CONNECTION_PARAMS"])
             return dpd.get_histogram(df_dask, column, bins)
+    except Exception as e:
+        logger.error("An exception occurred:", exc_info=e)
+        raise
+
+def from_csv_moments(column):
+    try:
+        with Client() as client:
+            logger.info(f'calculate moments for {column} in {settings["IN_CSV_FILE_PATH"]} file')
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"], usecols=[column])
+            return dpd.get_statistic(df_dask, column)
+    except Exception as e:
+        logger.error("An exception occurred:", exc_info=e)
+        raise
+
+def from_greenplum_moments(column):
+    try:
+        with Client() as client:
+            logger.info(f'calculate moments for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
+            df_dask = dpd.load_query_with_dask_sqlalchemy(
+                queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
+                settings["DASK_PARTITIONS"],
+                **settings["GREENPLUM_CONNECTION_PARAMS"])
+            return dpd.get_statistic(df_dask, column)
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise

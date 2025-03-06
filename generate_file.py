@@ -25,14 +25,26 @@ def generate_random_string(length, with_digits=True):
 
 def generate_row(current_date):
     """Generate a single row of data."""
-    # Generate column1: normally distributed number between 25 and 135
-    column1 = np.random.normal(loc=80, scale=20)
-    column1 = max(25.0, min(column1, 135.0))  # Clamp values to the range [25, 135]
+    norm = np.random.normal(loc=80, scale=20)
+    norm = max(25.0, min(norm, 135.0))  # Clamp values to the range [25, 135]
+    exp = np.random.exponential(scale=1.5)
+    exp = 25.0 + exp * 15.0
+    exp = max(25.0, min(exp, 135.0))  # Clamp values to the range [25, 135]
+    lap = np.random.laplace(loc=80, scale=20)
+    lap = max(25.0, min(lap, 135.0))  # Clamp values to the range [25, 135]
 
-    # Generate column2: exponential distributed
-    column2 = np.random.exponential(scale=1.5)
-    column2 = 25.0 + column2 * 15.0
-    column2 = max(25.0, min(column2, 135.0))  # Clamp values to the range [25, 135]
+    if random.random() < 0.95:
+        column1 = norm
+    else:
+        column1 = exp
+
+    if random.random() < 0.9:
+        column2 = lap
+    else:
+        column2 = exp
+
+    exp = 25.0 + exp * 15.0
+    exp = max(25.0, min(exp, 135.0))  # Clamp values to the range [25, 135]
 
     # Generate column3: random string with 75% chance of containing digits and letters
     if random.random() < 0.75:

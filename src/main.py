@@ -56,6 +56,12 @@ def create_histogram(data_source, column, bins=10):
     else:
         return from_greenplum_dask_histogram(column, bins)
 
+def get_moments(data_source, column):
+    if data_source == DataSource.CSV:
+        return from_csv_moments(column)
+    else:
+        return from_greenplum_moments(column)
+
 if __name__ == "__main__":
     pass
     #process(DataSource.CSV, DataTransformer.DASK, DataDestination.CSV)

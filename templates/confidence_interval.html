@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confidence Interval</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+function startProcess() {
+    var startButton = document.getElementById("startButton");
+    var messageDiv = document.getElementById("message");
+    var resultsDiv = document.getElementById("results");
+    startButton.disabled = true;
+    messageDiv.innerText = "";
+    messageDiv.className = "";
+    resultsDiv.innerHTML = ""; // Clear previous results
+
+    var dataSource = document.getElementById("dataSource").value;
+    var processColumn = document.getElementById("column").value;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "/conf_int/calculate", true);
+    xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            startButton.disabled = false;
+            var response = JSON.parse(xhr.responseText);
+            if (xhr.status === 200) {
+                messageDiv.className = "alert alert-success mt-3";
+                messageDiv.innerText = response.status;
+
+                // Display the results
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info mt-3">
+                        <strong>Mean:</strong> ${response.mean}<br>
+                        <strong>Standard Deviation:</strong> ${response.std}<br>
+                        <strong>Skewness:</strong> ${response.skew}<br>
+                        <strong>Kurtosis:</strong> ${response.kurtosis}
+                    </div>
+                `;
+            } else {
+                messageDiv.className = "alert alert-danger mt-3";
+                messageDiv.innerText = response.error;
+            }
+        }
+    };
+    xhr.send(JSON.stringify({
+        data_source: dataSource,
+        data_column: processColumn
+    }));
+}
+
+</script>
+
+</head>
+<body class="bg-light container mt-5">
+                 <h3 class="mb-3">Confidence Interval</h3>
+
+                <form>
+                    <div class="form-group row">
+                            <label for="dataSource" class="col-sm-2 col-form-label">Data Source:</label>
+                            <div class="col-sm-10">
+                                <select id="dataSource" class="form-control">
+                                    <option value="CSV">CSV</option>
+                                    <option value="GREENPLUM">GREENPLUM</option>
+                                </select>
+                            </div>
+                    </div>
+                    <div class="form-group row">
+                            <label for="column" class="col-sm-2 col-form-label">Column:</label>
+                            <div class="col-sm-10">
+                                <select id="column" class="form-control">
+                                    <option value="column1">Column1</option>
+                                    <option value="column2">Column2</option>
+                                </select>
+                            </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="form-group col-lg-12">
+                            <button id="startButton" type="button" class="btn btn-primary mt-2" onclick="startProcess()">Moments</button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="message"></div> <!-- Message container -->
+                <div id="results"></div> <!-- Results container -->
+
+    <!-- Bootstrap JS (Optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

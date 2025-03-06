@@ -100,7 +100,7 @@ def trans_df():
             "2024-03-02 10:05:00", "2024-03-02 10:15:00", "2024-03-02 10:45:00", "2024-03-02 10:55:00",  # 10:00 AM
             "2024-03-02 11:05:00", "2024-03-02 11:15:00", "2024-03-02 11:25:00", "2024-03-02 11:35:00", "2024-03-02 11:45:00",  # 11:00 AM
             "2024-03-02 12:05:00", "2024-03-02 12:15:00", "2024-03-02 12:25:00",  # 12:00 PM
-            "2024-03-02 13:05:00", "2024-03-02 13:15:00"  # 01:00 PM
+            "2024-03-02 13:05:00", "2024-03-02 13:45:00"  # 01:00 PM
         ])
     }
 
@@ -139,6 +139,19 @@ def test_aggregate_data_frame(trans_df, agg_df):
     # Ensure aggregated DataFrame matches expected results
     pd.testing.assert_frame_equal(result_df.reset_index().round(2), agg_df.round(2))
 
+def adjust_hour(row):
+    if row.minute < 30:
+        return row.dt.floor("h")
+    else:
+        return (row + pd.Timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+
+def test_prep_join_data_frames(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour, meta=('column4', 'datetime64[ns]'))
+    result_df = trans_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
 def test_join_data_frames(trans_df, agg_df):
     trans_ddf = dd.from_pandas(trans_df, npartitions=2)
     agg_ddf = dd.from_pandas(agg_df, npartitions=2)
@@ -165,7 +178,7 @@ def df_with_float_column():
 
 def test_get_histogram(df_with_float_column):
     ddf = dd.from_pandas(df_with_float_column, npartitions=2)
-    hist, bins = get_histogram(ddf, "column2")
+    hist, bins = get_histogram(ddf, "column")
     print(hist.compute())
     np.testing.assert_array_equal( hist.compute(), np.array([9, 8, 6, 7, 2, 4, 0, 0, 1, 5]))
     print(bins)
