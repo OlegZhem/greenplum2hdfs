@@ -148,8 +148,8 @@ def run_confidence_interval():
     return render_template('confidence_interval.html')
 
 
-@app.route('/conf_int/calculate', methods=['POST'])
-def get_moments_process():
+@app.route('/conf_int/get_stat', methods=['POST'])
+def get_stat():
     try:
         data = request.get_json()
         logger.info(f'{request.base_url} {data}')

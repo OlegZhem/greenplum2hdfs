@@ -37,16 +37,14 @@ def generate_row(current_date):
         column1 = norm
     else:
         column1 = exp
+    column1 = np.random.normal(loc=80, scale=20)
 
     if random.random() < 0.9:
         column2 = lap
     else:
         column2 = exp
 
-    exp = 25.0 + exp * 15.0
-    exp = max(25.0, min(exp, 135.0))  # Clamp values to the range [25, 135]
-
-    # Generate column3: random string with 75% chance of containing digits and letters
+     # Generate column3: random string with 75% chance of containing digits and letters
     if random.random() < 0.75:
         column3 = generate_random_string(random.randint(7, 15), with_digits=True)
     else:
@@ -74,7 +72,8 @@ def generate_and_save_data(num_rows, rows_per_day, start_date, filename):
     with open(filename, 'w') as file:
         logger.info(f"open file {file_name}")
         file.write('column1,column2,column3,column4\n')
-        for _ in range(num_rows):
+        i = 0
+        while i < num_rows:
             # Generate a row of data
             row = generate_row(current_date)
             file.write(','.join(map(str, row)) + '\n')
@@ -83,9 +82,12 @@ def generate_and_save_data(num_rows, rows_per_day, start_date, filename):
             rand = random.random()
             if rand < 0.06:  # 6% chance: 1 duplicate (2 rows total)
                 file.write(','.join(map(str, row)) + '\n')
+                i += 1
             elif rand < 0.08:  # 2% chance: 2 duplicates (3 rows total)
                 file.write(','.join(map(str, row)) + '\n')
                 file.write(','.join(map(str, row)) + '\n')
+                i += 2
+            i += 1
 
             # Increment the timestamp
             current_date += time_increment

@@ -11,11 +11,13 @@
    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-function startProcess() {
-    var startButton = document.getElementById("startButton");
+function get_stat() {
+    var button1 = document.getElementById("button1");
+    var button2 = document.getElementById("button2");
     var messageDiv = document.getElementById("message");
-    var resultsDiv = document.getElementById("results");
-    startButton.disabled = true;
+    var resultsDiv = document.getElementById("results1");
+    button1.disabled = true;
+    button2.disabled = true;
     messageDiv.innerText = "";
     messageDiv.className = "";
     resultsDiv.innerHTML = ""; // Clear previous results
@@ -24,11 +26,12 @@ function startProcess() {
     var processColumn = document.getElementById("column").value;
 
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", "/conf_int/calculate", true);
+    xhr.open("POST", "/conf_int/get_stat", true);
     xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            startButton.disabled = false;
+            button1.disabled = false;
+            button2.disabled = false;
             var response = JSON.parse(xhr.responseText);
             if (xhr.status === 200) {
                 messageDiv.className = "alert alert-success mt-3";
@@ -55,40 +58,117 @@ function startProcess() {
     }));
 }
 
+function calculate() {
+    var button1 = document.getElementById("button1");
+    var button2 = document.getElementById("button2");
+    var messageDiv = document.getElementById("message");
+    var resultsDiv = document.getElementById("results2");
+    button1.disabled = true;
+    button2.disabled = true;
+    messageDiv.innerText = "";
+    messageDiv.className = "";
+    resultsDiv.innerHTML = ""; // Clear previous results
+
+    var dataSource = document.getElementById("dataSource").value;
+    var processColumn = document.getElementById("column").value;
+
+    var xhr2 = new XMLHttpRequest();
+    xhr2.open("POST", "/conf_int/calculate", true);
+    xhr2.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    xhr2.onreadystatechange = function() {
+        if (xhr2.readyState === 4) {
+            button1.disabled = false;
+            button2.disabled = false;
+            var response = JSON.parse(xhr2.responseText);
+            if (xhr2.status === 200) {
+                messageDiv.className = "alert alert-success mt-3";
+                messageDiv.innerText = response.status;
+
+                // Display the results
+                resultsDiv.innerHTML = `
+                    <div class="alert alert-info mt-3">
+                        <strong>Result:</strong> OK
+                    </div>
+                `;
+            } else {
+                messageDiv.className = "alert alert-danger mt-3";
+                messageDiv.innerText = response.error;
+            }
+        }
+    };
+    xhr2.send(JSON.stringify({
+        data_source: dataSource,
+        data_column: processColumn
+    }));
+}
+
 </script>
 
 </head>
 <body class="bg-light container mt-5">
                  <h3 class="mb-3">Confidence Interval</h3>
 
-                <form>
-                    <div class="form-group row">
-                            <label for="dataSource" class="col-sm-2 col-form-label">Data Source:</label>
-                            <div class="col-sm-10">
-                                <select id="dataSource" class="form-control">
-                                    <option value="CSV">CSV</option>
-                                    <option value="GREENPLUM">GREENPLUM</option>
-                                </select>
-                            </div>
-                    </div>
-                    <div class="form-group row">
-                            <label for="column" class="col-sm-2 col-form-label">Column:</label>
-                            <div class="col-sm-10">
-                                <select id="column" class="form-control">
-                                    <option value="column1">Column1</option>
-                                    <option value="column2">Column2</option>
-                                </select>
-                            </div>
-                    </div>
-                    <div class="form-group row">
-                        <div class="form-group col-lg-12">
-                            <button id="startButton" type="button" class="btn btn-primary mt-2" onclick="startProcess()">Moments</button>
+  <div class="row">
+        <!-- Existing Form -->
+        <div class="col-6">
+            <form>
+                <div class="form-group row">
+                        <label for="dataSource" class="col-sm-2 col-form-label">Data Source:</label>
+                        <div class="col-sm-10">
+                            <select id="dataSource" class="form-control">
+                                <option value="CSV">CSV</option>
+                                <option value="GREENPLUM">GREENPLUM</option>
+                            </select>
                         </div>
+                </div>
+                <div class="form-group row">
+                        <label for="column" class="col-sm-2 col-form-label">Column:</label>
+                        <div class="col-sm-10">
+                            <select id="column" class="form-control">
+                                <option value="column1">Column1</option>
+                                <option value="column2">Column2</option>
+                            </select>
+                        </div>
+                </div>
+                <div class="form-group row">
+                    <div class="form-group col-lg-12">
+                        <button id="button1" type="button" class="btn btn-primary mt-2" onclick="get_stat()">Moments</button>
                     </div>
-                </form>
+                </div>
+                <div id="results1"></div> <!-- Results container -->
+            </form>
+        </div>
+        <div class="col-6">
+            <form>
+                <div class="form-group row">
+                     <div class="form-group row">
+                     <label for="ci_value" class="col-sm-2 col-form-label">Confidence Interval:</label>
+                     <div class="col-sm-10">
+                        <input type="number" class="form-control" id="ci_value" value="95">
+                    </div>
+                </div>
+                <label for="method" class="col-sm-2 col-form-label">Method:</label>
+                    <div class="col-sm-10">
+                        <select id="method" class="form-control">
+                            <option value="t_interval">t-interval</option>
+                            <option value="bootstrap">bootstrap</option>
+                            <option value="percentile">bootstrap</option>
+                            <option value="log_transform">bootstrap</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="form-group col-lg-12">
+                        <button id="button2" type="button" class="btn btn-primary mt-2" onclick="calculate()">Calculate</button>
+                    </div>
+                </div>
+                <div id="results2"></div> <!-- Results container -->
+            </form>
+        </div>
 
-                <div id="message"></div> <!-- Message container -->
-                <div id="results"></div> <!-- Results container -->
+      </div>
+
+      <div id="message"></div> <!-- Message container -->
 
     <!-- Bootstrap JS (Optional) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

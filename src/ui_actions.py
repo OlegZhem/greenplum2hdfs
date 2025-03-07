@@ -1,10 +1,11 @@
+import datetime
 import logging
 import sys
 
 import pandas as pd
 from dask import dataframe as dd
 from dask.diagnostics import ProgressBar
-from distributed import Client, progress
+from distributed import Client, progress, LocalCluster
 
 import src.data_processor_pandas as dpp
 import src.data_processor_dask as dpd
@@ -34,15 +35,36 @@ def from_csv_transform_pandas_to_csv():
 
 def from_csv_full_dask_to_csv():
     try:
-        with Client() as client:
-            logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["DASK_BLOCK_SIZE"]}')
-            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["DASK_BLOCK_SIZE"])
-            df_tran = dpd.transform_data_frame(df_dask)
-            df_agg = dpd.aggregate_data_frame(df_tran)
-            df_processed = dpd.merge_with_aggregated_2(df_tran, df_agg)
-            #progress(client.persist(df_processed))
-            df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
-            logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+        with LocalCluster(n_workers=12, threads_per_worker=1, memory_limit='10GB') as cluster:
+            with Client(cluster) as client:
+
+                print(cluster)
+
+                logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["DASK_BLOCK_SIZE"]}')
+                df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"],
+                                      parse_dates=['column4'],
+                                      date_parser= lambda  x : datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S:%f'),
+                                      blocksize=settings["DASK_BLOCK_SIZE"])
+
+                # Analyze partition sizes before transformation
+                partition_sizes = df_dask.map_partitions(len).compute()
+
+                # Print summary of partition sizes
+                print("Partition Size Summary Before Transformation:")
+                print(partition_sizes.describe())  # Gives min, max, mean, etc.
+                print(partition_sizes)  # Print all partition sizes
+
+                #df_dask["column4"] = dd.to_datetime(df_dask["column4"], format='%Y-%m-%d %H:%M:%S:%f', errors='coerce')  # Ensure column4 is datetime
+                df_dask["hour"] = df_dask["column4"].dt.floor("h")
+                #df_dask = df_dask.repartition(npartitions=10)
+                #df_dask = df_dask.shuffle("column4")
+
+                df_tran = dpd.transform_data_frame(df_dask)
+                df_agg = dpd.aggregate_data_frame(df_tran)
+                df_processed = dpd.merge_with_aggregated_3(df_tran, df_agg)
+                #progress(client.persist(df_processed))
+                df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
+                logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
         logger.error("Exception:", exc_info=e)
         raise

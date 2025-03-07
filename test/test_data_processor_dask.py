@@ -139,15 +139,9 @@ def test_aggregate_data_frame(trans_df, agg_df):
     # Ensure aggregated DataFrame matches expected results
     pd.testing.assert_frame_equal(result_df.reset_index().round(2), agg_df.round(2))
 
-def adjust_hour(row):
-    if row.minute < 30:
-        return row.replace(minute=0, second=0, microsecond=0)
-    else:
-        return (row + pd.Timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
-
 def test_prep_join_data_frames(trans_df, agg_df):
     trans_ddf = dd.from_pandas(trans_df, npartitions=2)
-    trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour, meta=('column4', 'datetime64[ns]'))
+    trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour_row, meta=('column4', 'datetime64[ns]'))
     result_df = trans_ddf.compute()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(result_df)

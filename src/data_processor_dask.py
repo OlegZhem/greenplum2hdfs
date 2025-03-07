@@ -86,8 +86,14 @@ def merge_with_aggregated_1(ddf, agg_ddf):
 
     return merged_ddf
 
+def adjust_hour_row(row):
+    if row.minute < 30:
+        return row.replace(minute=0, second=0, microsecond=0)
+    else:
+        return (row + pd.Timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
 
-def adjust_hour(df, agg_hours):
+
+def adjust_hour_partition(df, agg_hours):
     df["base_hour"] = df["column4"].dt.floor("h")
     df["next_hour"] = df["base_hour"] + pd.Timedelta(hours=1)
 
@@ -103,10 +109,11 @@ def adjust_hour(df, agg_hours):
 
 def merge_with_aggregated_2(trans_ddf, agg_ddf):
     # Get unique hours from agg_ddf
-    agg_hours = agg_ddf["hour"].unique()
+    agg_hours = agg_ddf["hour"].compute().unique()
+    #agg_hours = agg_ddf[["hour"]].drop_duplicates()
 
     # Adjust hours in trans_ddf
-    trans_ddf = trans_ddf.map_partitions(adjust_hour, agg_hours=agg_hours, meta={
+    trans_ddf = trans_ddf.map_partitions(adjust_hour_partition, agg_hours=agg_hours, meta={
         "column1": "f8", "column2": "f8", "column3": "O", "column4": "datetime64[ns]", "join_hour": "datetime64[ns]"
     })
 
@@ -114,6 +121,26 @@ def merge_with_aggregated_2(trans_ddf, agg_ddf):
     merged_ddf = trans_ddf.merge(agg_ddf, left_on="join_hour", right_on="hour", how="left")
 
     return merged_ddf
+
+def merge_with_aggregated_3(trans_ddf, agg_ddf):
+    trans_ddf["base_hour"] = trans_ddf["column4"].dt.floor("h")
+    trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour_row, meta=('column4', 'datetime64[ns]'))
+
+    # First join on adjusted_hour
+    merged_ddf = trans_ddf.merge(agg_ddf, left_on="adjusted_hour", right_on="hour", how="left")
+
+    # Identify rows that did not merge in the first join
+    unmerged_rows = merged_ddf[merged_ddf["hour"].isna()]
+
+    # Perform the second join on base_hour for the unmerged rows
+    unmerged_rows = unmerged_rows.drop(columns=["hour"])  # Drop the hour column from the first join
+    second_merge = unmerged_rows.merge(agg_ddf, left_on="base_hour", right_on="hour", how="left")
+
+    # Combine the results from both joins
+    merged_ddf = merged_ddf[~merged_ddf["hour"].isna()]  # Rows that merged in the first join
+    final_ddf = dd.concat([merged_ddf, second_merge], axis=0, ignore_index=True)
+
+    return final_ddf
 
 def get_histogram(ddf, column, bins=10):
     da_dask = ddf[column].to_dask_array(lengths=True)
