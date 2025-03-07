@@ -35,12 +35,12 @@ def from_csv_transform_pandas_to_csv():
 def from_csv_full_dask_to_csv():
     try:
         with Client() as client:
-            logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["BOCK_SIZE"]}')
-            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"])
+            logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["DASK_BLOCK_SIZE"]}')
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["DASK_BLOCK_SIZE"])
             df_tran = dpd.transform_data_frame(df_dask)
             df_agg = dpd.aggregate_data_frame(df_tran)
-            df_processed = dpd.merge_with_aggregated(df_tran, df_agg)
-            progress(client.persist(df_processed))
+            df_processed = dpd.merge_with_aggregated_2(df_tran, df_agg)
+            #progress(client.persist(df_processed))
             df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
             logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
     except Exception as e:
@@ -73,7 +73,7 @@ def from_greenplum_table_transform_dask_to_csv():
                     **settings["GREENPLUM_CONNECTION_PARAMS"])
                 df_tran = dpd.transform_data_frame(df_dask)
                 df_agg = dpd.aggregate_data_frame(df_tran)
-                df_processed = dpd.merge_with_aggregated(df_tran, df_agg)
+                df_processed = dpd.merge_with_aggregated_1(df_tran, df_agg)
                 progress(client.persist(df_processed))
                 df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
         logger.info(f'finish processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
@@ -100,7 +100,7 @@ def from_csv_dask_histogram(column, bins=10):
     try:
         with Client() as client:
             logger.info(f'create histogram for {column} in {settings["IN_CSV_FILE_PATH"]} file')
-            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"], usecols=[column])
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["DASK_BLOCK_SIZE"], usecols=[column])
             return dpd.get_histogram(df_dask, column, bins)
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
@@ -123,7 +123,7 @@ def from_csv_moments(column):
     try:
         with Client() as client:
             logger.info(f'calculate moments for {column} in {settings["IN_CSV_FILE_PATH"]} file')
-            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["BOCK_SIZE"], usecols=[column])
+            df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"], blocksize=settings["DASK_BLOCK_SIZE"], usecols=[column])
             return dpd.get_statistic(df_dask, column)
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)

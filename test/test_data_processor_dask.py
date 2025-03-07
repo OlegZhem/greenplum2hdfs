@@ -141,7 +141,7 @@ def test_aggregate_data_frame(trans_df, agg_df):
 
 def adjust_hour(row):
     if row.minute < 30:
-        return row.dt.floor("h")
+        return row.replace(minute=0, second=0, microsecond=0)
     else:
         return (row + pd.Timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
 
@@ -152,11 +152,11 @@ def test_prep_join_data_frames(trans_df, agg_df):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(result_df)
 
-def test_join_data_frames(trans_df, agg_df):
+def test_join_data_frames_1(trans_df, agg_df):
     trans_ddf = dd.from_pandas(trans_df, npartitions=2)
     agg_ddf = dd.from_pandas(agg_df, npartitions=2)
 
-    result_ddf = merge_with_aggregated(trans_ddf, agg_ddf)
+    result_ddf = merge_with_aggregated_1(trans_ddf, agg_ddf)
 
     # Convert to Pandas for testing correctness
     result_df = result_ddf.compute()
@@ -164,7 +164,21 @@ def test_join_data_frames(trans_df, agg_df):
         print(result_df)
 
     assert result_df.shape[0] == 14
-    assert len(result_df.columns) == 10
+    assert len(result_df.columns) == 11
+
+def test_join_data_frames_2(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    agg_ddf = dd.from_pandas(agg_df, npartitions=2)
+
+    result_ddf = merge_with_aggregated_2(trans_ddf, agg_ddf)
+
+    # Convert to Pandas for testing correctness
+    result_df = result_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+    assert result_df.shape[0] == 14
+    assert len(result_df.columns) == 11
 
 @pytest.fixture
 def df_with_float_column():

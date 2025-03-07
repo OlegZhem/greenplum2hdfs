@@ -1,5 +1,9 @@
+import time
+
 import numpy as np
 from flask import Flask, render_template, request, jsonify
+
+from src.human_time_duration import human_time_duration
 from src.ui_properties import settings, save_settings
 from src.main import *
 
@@ -76,10 +80,11 @@ def run_dask_process():
         except Exception as e:
             return jsonify({"error": "Invalid parameters provided."}), 400
 
-        # Run the process function.
+        start_time = time.perf_counter()
         process_dask(ds_enum, DataTransformerDask.FULL, dd_enum)
+        execution_time = human_time_duration(time.perf_counter() - start_time)
 
-        return jsonify({"status": "Process completed successfully."})
+        return jsonify({"status": f"Process completed successfully. execution_time: {execution_time}"})
     except ValueError:
         return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
     except Exception as e:
@@ -108,6 +113,8 @@ def run_histogram_process():
             logger.error("convert to DataSource", exc_info=e)
             return jsonify({"error": "Invalid parameters provided."}), 400
 
+        start_time = time.perf_counter()
+
         # Run the process function.
         hist, bin_edges = create_histogram(ds_enum, column, bins_int)
         logger.debug(f'hist {type(hist)}: {hist}')
@@ -123,8 +130,10 @@ def run_histogram_process():
         logger.debug(f'hist list : {hist_list}')
         logger.debug(f'bins list: {bins_list}')
 
+        execution_time = human_time_duration(time.perf_counter() - start_time)
+
         return jsonify({
-            "status": "Process completed successfully.",
+            "status": f"Process completed successfully. Execution time: {execution_time}",
             "hist": hist_list,
             "bins": bins_list
         })

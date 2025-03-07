@@ -108,4 +108,8 @@ python flaskApp.py
 
 http://localhost:5000
 
+go to settings section and: 
+- set 'CSV source data file' to name of the generated file
+- set greenplum connection settings and table name
+
  

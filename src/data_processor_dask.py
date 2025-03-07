@@ -77,12 +77,41 @@ def aggregate_data_frame(ddf):
 
     return agg_df
 
-def merge_with_aggregated(ddf, agg_ddf):
+def merge_with_aggregated_1(ddf, agg_ddf):
     # Ensure 'hour' column exists in original DataFrame
     ddf["hour"] = ddf["column4"].dt.floor("h")
 
     # Perform a left join on "hour" column
     merged_ddf = ddf.merge(agg_ddf, on="hour", how="left")
+
+    return merged_ddf
+
+
+def adjust_hour(df, agg_hours):
+    df["base_hour"] = df["column4"].dt.floor("h")
+    df["next_hour"] = df["base_hour"] + pd.Timedelta(hours=1)
+
+    # Determine the joining hour based on minute conditions
+    df["join_hour"] = df["base_hour"]
+    df.loc[df["column4"].dt.minute >= 30, "join_hour"] = df["next_hour"]
+
+    # Ensure next_hour exists in agg_hours, otherwise fallback to base_hour
+    df.loc[~df["join_hour"].isin(agg_hours), "join_hour"] = df["base_hour"]
+
+    return df[["column1", "column2", "column3", "column4", "join_hour"]]
+
+
+def merge_with_aggregated_2(trans_ddf, agg_ddf):
+    # Get unique hours from agg_ddf
+    agg_hours = agg_ddf["hour"].unique()
+
+    # Adjust hours in trans_ddf
+    trans_ddf = trans_ddf.map_partitions(adjust_hour, agg_hours=agg_hours, meta={
+        "column1": "f8", "column2": "f8", "column3": "O", "column4": "datetime64[ns]", "join_hour": "datetime64[ns]"
+    })
+
+    # Perform the join
+    merged_ddf = trans_ddf.merge(agg_ddf, left_on="join_hour", right_on="hour", how="left")
 
     return merged_ddf
 
@@ -111,7 +140,7 @@ def usage_greenplum():
         'user': 'your_user',
         'password': 'your_password'
     }
-    BOCK_SIZE = "64MB"
+    DASK_BLOCK_SIZE = "64MB"
     with Client() as client:
         df_dask = load_table_with_dask("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
         df_processed = transform_data_frame(df_dask).compute()
