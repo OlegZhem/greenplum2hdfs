@@ -32,16 +32,32 @@ def clean_partition(df):
 
     return df
 
-def transform_data_frame(ddf):
-    ddf = ddf.map_partitions(clean_partition, meta=ddf)
-    ddf = ddf.drop_duplicates()
-    return ddf
+def transform_data_frame(df):
+    # Remove rows where column3 is empty
+    df = df[df["column3"].notnull() & (df["column3"].str.strip() != "")]
+
+    # Remove rows where column4 (timestamp) is between 1 AM and 3 AM
+    df["column4"] = dd.to_datetime(df["column4"], format='%Y-%m-%d %H:%M:%S:%f', errors='coerce')  # Ensure column4 is datetime
+    df = df[~((df["column4"].dt.hour >= 1) & (df["column4"].dt.hour < 3))]
+
+    # If column3 does not contain digits, set it to an empty string
+    df["column3"] = df["column3"].apply(lambda x: x if contains_digits(x) else "", meta=('column3', 'object'))
+
+    # Remove duplicates while keeping one instance
+    df = df.drop_duplicates()
+
+    return df
 
 def transform_data_frame2(ddf):
     ddf = ddf.map_partitions(clean_partition, meta=ddf)
+    #ddf = ddf.drop_duplicates()
+    return ddf
+
+def transform_data_frame3(ddf):
+    ddf = ddf.map_partitions(clean_partition, meta=ddf)
 
     ddf["hour"] = ddf["column4"].dt.floor("h")  # Truncate to the hour
-    ddf = ddf.set_index("hour", sorted=False)
+    ddf.shuffle("hour")
 
     ddf = ddf.map_partitions(lambda df: df.drop_duplicates(), meta=ddf)
     return ddf
@@ -165,23 +181,32 @@ def merge_with_aggregated_4(trans_ddf, agg_ddf):
         if col != "hour":
             merged_ddf[col] = merged_ddf[col].fillna(unmatched_ddf[col])
 
-    #merged_ddf.index.drop_duplicates()
+    #merged_ddf = merged_ddf.reset_index(drop=True)  # Drop the existing index
+    #merged_ddf = merged_ddf.assign(unique_id=merged_ddf.index.map(lambda x: x + 1))  # Create a unique ID
+    #merged_ddf = merged_ddf.set_index('unique_id')  # Set the unique ID as the index
 
     return merged_ddf
 
 def get_histogram(ddf, column, bins=10):
     da_dask = ddf[column].to_dask_array(lengths=True)
-    max = da_dask.max().compute()
-    min = da_dask.min().compute()
+    min_task = da_dask.min()
+    max_task = da_dask.max()
+    min, max = dask.compute(min_task, max_task)  # Parallel execution
     return da.histogram(da_dask, bins=bins, range=[min, max])
 
 def get_statistic(ddf, column):
     da_dask = ddf[column].to_dask_array(lengths=True)
-    mean = da_dask.mean().compute()
-    std = da_dask.std().compute()
-    skew_val = skew(da_dask).compute()
-    kurtosis_val = kurtosis(da_dask).compute()
-    return mean, std, skew_val, kurtosis_val
+
+    # Create lazy computation graphs (nothing is executed yet)
+    mean_task = da_dask.mean()
+    std_task = da_dask.std(ddof=1)
+    skew_task = dask.delayed(skew)(da_dask)  # Skew & kurtosis are not Dask-native, so use dask.delayed
+    kurtosis_task = dask.delayed(kurtosis)(da_dask)
+
+    # Compute all metrics in parallel
+    mean, std, skew_val, kurtosis_val = dask.compute(mean_task, std_task, skew_task, kurtosis_task)
+
+    return mean, std, skew_val.compute(), kurtosis_val.compute()
 
 
  # Usage example

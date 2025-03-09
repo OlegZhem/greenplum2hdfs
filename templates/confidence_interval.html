@@ -71,6 +71,8 @@ function calculate() {
 
     var dataSource = document.getElementById("dataSource").value;
     var processColumn = document.getElementById("column").value;
+    var method = document.getElementById("method").value;
+    var ci_value = document.getElementById("ci_value").value;
 
     var xhr2 = new XMLHttpRequest();
     xhr2.open("POST", "/conf_int/calculate", true);
@@ -87,7 +89,8 @@ function calculate() {
                 // Display the results
                 resultsDiv.innerHTML = `
                     <div class="alert alert-info mt-3">
-                        <strong>Result:</strong> OK
+                        <strong>lower_bound:</strong> ${response.lower_bound}<br>
+                        <strong>upper_bound:</strong> ${response.upper_bound}<br>
                     </div>
                 `;
             } else {
@@ -98,7 +101,9 @@ function calculate() {
     };
     xhr2.send(JSON.stringify({
         data_source: dataSource,
-        data_column: processColumn
+        data_column: processColumn,
+        data_method: method,
+        ci: ci_value
     }));
 }
 
@@ -152,8 +157,6 @@ function calculate() {
                         <select id="method" class="form-control">
                             <option value="t_interval">t-interval</option>
                             <option value="bootstrap">bootstrap</option>
-                            <option value="percentile">bootstrap</option>
-                            <option value="log_transform">bootstrap</option>
                         </select>
                     </div>
                 </div>

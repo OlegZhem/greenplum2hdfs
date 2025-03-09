@@ -26,19 +26,6 @@ class DataDestination(StrEnum):
     PARQUET = 'PARQUET'
     HDFS = 'HDFS'
 
-def process_pandas(data_source, data_destination):
-    if data_source == DataSource.CSV:
-        if data_destination == DataDestination.CSV:
-            from_csv_transform_pandas_to_csv()
-        else:
-            pass
-    else:
-        if data_destination == DataDestination.CSV:
-            from_greenplum_transform_pandas_to_csv()
-        else:
-            pass
-
-
 def process_dask(data_source, data_transformer, data_destination):
     if data_source == DataSource.CSV:
         if data_destination == DataDestination.CSV:
@@ -66,6 +53,19 @@ def get_moments(data_source, column):
         return from_csv_moments(column)
     else:
         return from_greenplum_moments(column)
+
+def get_ci_via_t_interval(data_source, column, ci_percent):
+    if data_source == DataSource.CSV:
+        return from_csv_ci_via_t_interval(column, ci_percent)
+    else:
+        return from_greenplum_ci_via_t_interval(column, ci_percent)
+
+def get_ci_via_bootstrap(data_source, column, ci_percent):
+    if data_source == DataSource.CSV:
+        return from_csv_ci_via_bootstrap(column, ci_percent)
+    else:
+        return from_greenplum_ci_via_bootstrap(column, ci_percent)
+
 
 if __name__ == "__main__":
     pass

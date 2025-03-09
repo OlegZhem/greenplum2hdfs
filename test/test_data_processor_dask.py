@@ -116,7 +116,7 @@ def agg_df():
             pd.Timestamp("2024-03-02 12:00:00"),
             pd.Timestamp("2024-03-02 13:00:00"),
         ],
-        "unique_values_count": [3, 4, 3, 2],  # Unique values in column3 per hour
+        "unique_values_count": [3, 4, 3, 2],
         "mean_column1": [26.75, 38.0, 20.0, 16.5],
         "median_column1": [3.0, 30.0, 15.0, 16.5],
         "mean_column2": [41.250000, 33.00000, 19.333333, 19.50000],
@@ -142,6 +142,28 @@ def test_aggregate_data_frame(trans_df, agg_df):
 
     # Ensure aggregated DataFrame matches expected results
     pd.testing.assert_frame_equal(result_df.reset_index().round(2), agg_df.round(2))
+
+def test_agg(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+
+    trans_ddf["hour"] = trans_ddf["column4"].dt.floor("h")  # Truncate to the hour
+    trans_ddf.shuffle("hour")
+
+    agg_ddf = trans_ddf.groupby("hour").agg({
+        "column3": "nunique",  # Count of unique values
+        "column1": ["mean", "median"],  # Mean and median for column1
+        "column2": ["mean", "median"]  # Mean and median for column2
+    })
+
+    result_df = agg_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print('result')
+        print(result_df)
+    print(result_df.columns)
+    print(agg_df.columns)
+    assert 1 + len(result_df.columns) == len(agg_df.columns)
+    assert len(result_df) == len(agg_df)
+
 
 def test_prep_join_data_frames(trans_df, agg_df):
     trans_ddf = dd.from_pandas(trans_df, npartitions=2)

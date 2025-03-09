@@ -37,30 +37,6 @@ def pandas():
     return render_template('processing_pandas.html')
 
 
-@app.route('/pandas/process', methods=['POST'])
-def run_pandas_process():
-    try:
-        data = request.get_json()
-        ds = data.get("data_source")
-        dd = data.get("data_destination")
-
-        # Convert string values to enum members.
-        try:
-            ds_enum = DataSource(ds)
-            dd_enum = DataDestination(dd)
-        except Exception as e:
-            return jsonify({"error": "Invalid parameters provided."}), 400
-
-        # Run the process function.
-        process_pandas(ds_enum, dd_enum)
-
-        return jsonify({"status": "Process completed successfully."})
-    except ValueError:
-        return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
-    except Exception as e:
-        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
-
-
 @app.route('/dask')
 def dask():
     return render_template('processing_dask.html')
@@ -172,6 +148,50 @@ def get_stat():
             "skew": skew_val,
             "kurtosis": kurtosis_val,
         })
+    except ValueError:
+        return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
+    except Exception as e:
+        logger.error("convert to DataSource", exc_info=e)
+        return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+@app.route('/conf_int/calculate', methods=['POST'])
+def ci_calculate():
+    try:
+        data = request.get_json()
+        logger.info(f'{request.base_url} {data}')
+        ds = data.get("data_source")
+        column = data.get("data_column")
+        method = data.get("data_method")
+        ci = data.get("ci")
+
+        # Convert string values.
+        try:
+            ds_enum = DataSource(ds)
+            ci_percent = float(ci) / 100.
+        except Exception as e:
+            logger.error("convert to DataSource", exc_info=e)
+            return jsonify({"error": "Invalid parameters provided."}), 400
+
+
+        if method == 't_interval':
+            lower_bound, upper_bound = get_ci_via_t_interval(ds_enum, column, ci_percent)
+
+            return jsonify({
+                "status": "Process completed successfully.",
+                "lower_bound" : lower_bound,
+                "upper_bound" : upper_bound,
+            })
+        elif method == 'bootstrap':
+            lower_bound, upper_bound = get_ci_via_bootstrap(ds_enum, column, ci_percent)
+
+            return jsonify({
+                "status": "Process completed successfully.",
+                "lower_bound" : lower_bound,
+                "upper_bound" : upper_bound,
+            })
+        else:
+            return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
+
     except ValueError:
         return jsonify({"error": "Invalid selection. Please choose valid options."}), 400
     except Exception as e:
