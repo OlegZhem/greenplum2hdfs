@@ -95,10 +95,10 @@ def generate_and_save_data(num_rows, rows_per_day, start_date, filename):
         logger.info(f"file {file_name} generated")
 
 if __name__ == "__main__":
-    num_rows = 2_000_000  # Total number of rows to generate
-    rows_per_day = 100_000  # Number of rows per day
+    num_rows = 200_000_000  # Total number of rows to generate
+    rows_per_day = 1_000_000  # Number of rows per day
     start_date = datetime(2025, 1, 1, 0, 0, 0)  # Start date and time (midnight)
-    file_name = 'data/test_data_2M.csv'
+    file_name = 'data/test_data_200M.csv'
     # Generate data and save to file
     generate_and_save_data(num_rows, rows_per_day, start_date, file_name)
     logger.info(f"File {file_name} successfully created. Generated {num_rows} rows.")

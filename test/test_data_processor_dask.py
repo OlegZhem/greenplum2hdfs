@@ -128,12 +128,16 @@ def agg_df():
 
 def test_aggregate_data_frame(trans_df, agg_df):
     """Tests the aggregation function with multiple hours."""
-    agg_ddf = aggregate_data_frame(dd.from_pandas(trans_df, npartitions=2))
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    agg_ddf = aggregate_data_frame(trans_ddf)
 
-    # Convert to Pandas for testing correctness
-    result_df = agg_ddf.compute()
-    #print(result_df.to_dict())
+    from_df = trans_ddf.compute()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print('from')
+        print(from_df)
+    result_df = agg_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print('result')
         print(result_df)
 
     # Ensure aggregated DataFrame matches expected results
@@ -172,7 +176,40 @@ def test_join_data_frames_2(trans_df, agg_df):
         print(result_df)
 
     assert result_df.shape[0] == 14
-    assert len(result_df.columns) == 11
+    assert len(result_df.columns) == 12
+
+def test_join_data_frames_3(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    agg_ddf = dd.from_pandas(agg_df, npartitions=2)
+
+    result_ddf = merge_with_aggregated_3(trans_ddf, agg_ddf)
+
+    # Convert to Pandas for testing correctness
+    result_df = result_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+    assert result_df.shape[0] == trans_df.shape[0]
+    assert len(result_df.columns) == 12
+
+def test_join_data_frames_4(trans_df, agg_df):
+    trans_ddf = dd.from_pandas(trans_df, npartitions=2)
+    agg_ddf = dd.from_pandas(agg_df, npartitions=2)
+
+    result_ddf = merge_with_aggregated_4(trans_ddf, agg_ddf)
+
+    print(f' result index: {result_ddf.index.compute()}')
+    # Convert to Pandas for testing correctness
+    result_df = result_ddf.compute()
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+        print(result_df)
+
+    print(f' trans index: {trans_ddf.index.compute()}')
+    print(f' result index: {result_df.index}')
+    print(f' is result duplicated: {result_df.index.duplicated()}')
+
+    assert result_df.shape[0] == trans_df.shape[0]
+    assert len(result_df.columns) == 12
 
 @pytest.fixture
 def df_with_float_column():

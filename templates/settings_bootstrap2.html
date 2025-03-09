@@ -10,10 +10,9 @@
         async function saveSettings() {
             const settings = {
                 IN_CSV_FILE_PATH: document.getElementById("IN_CSV_FILE_PATH").value,
-                PANDAS_CHUNK_SIZE: parseInt(document.getElementById("PANDAS_CHUNK_SIZE").value),
-                OUT_PANDAS_CSV_FILE_PATH: document.getElementById("OUT_PANDAS_CSV_FILE_PATH").value,
                 DASK_BLOCK_SIZE: document.getElementById("DASK_BLOCK_SIZE").value,
                 OUT_DASK_CSV_FILE_PATH: document.getElementById("OUT_DASK_CSV_FILE_PATH").value,
+                OUT_DASK_PARQUET_FILE_PATH: document.getElementById("OUT_DASK_PARQUET_FILE_PATH").value,
                 GREENPLUM_CONNECTION_PARAMS: {
                     host: document.getElementById("host").value,
                     port: document.getElementById("port").value,
@@ -48,19 +47,7 @@
                     <input type="text" class="form-control" id="IN_CSV_FILE_PATH" value="{{ settings['IN_CSV_FILE_PATH'] }}">
                 </div>
             </div>
-            <div class="form-group row">
-                <label for="PANDAS_CHUNK_SIZE" class="col-sm-2 col-form-label">PANDAS_CHUNK_SIZE:</label>
-                <div class="col-sm-10">
-                    <input type="number" class="form-control" id="PANDAS_CHUNK_SIZE" value="{{ settings['PANDAS_CHUNK_SIZE'] }}">
-                </div>
-            </div>
-            <div class="form-group row">
-                <label for="OUT_PANDAS_CSV_FILE_PATH" class="col-sm-2 col-form-label">CSV destination file for Pandas:</label>
-                <div class="col-sm-10">
-                    <input type="text" class="form-control" id="OUT_PANDAS_CSV_FILE_PATH" value="{{ settings['OUT_PANDAS_CSV_FILE_PATH'] }}">
-                </div>
-            </div>
-            <div class="form-group row">
+           <div class="form-group row">
                 <label for="DASK_BLOCK_SIZE" class="col-sm-2 col-form-label">DASK_BLOCK_SIZE:</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="DASK_BLOCK_SIZE" value="{{ settings['DASK_BLOCK_SIZE'] }}">
@@ -70,6 +57,12 @@
                 <label for="OUT_DASK_CSV_FILE_PATH" class="col-sm-2 col-form-label">CSV destination file for Dask:</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="OUT_DASK_CSV_FILE_PATH" value="{{ settings['OUT_DASK_CSV_FILE_PATH'] }}">
+                </div>
+            </div>
+            <div class="form-group row">
+                <label for="OUT_DASK_PARQUET_FILE_PATH" class="col-sm-2 col-form-label">Parquet destination file for Dask:</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" id="OUT_DASK_PARQUET_FILE_PATH" value="{{ settings['OUT_DASK_PARQUET_FILE_PATH'] }}">
                 </div>
             </div>
 

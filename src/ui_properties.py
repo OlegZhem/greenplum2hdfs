@@ -11,10 +11,10 @@ SETTINGS_FILE = "settings.json"
 
 DEFAULT_SETTINGS = {
     "IN_CSV_FILE_PATH": "../data/test_data_2M.csv",
-    "PANDAS_CHUNK_SIZE": 10_000_000,
-    "OUT_PANDAS_CSV_FILE_PATH": "../out/processed_data_pandas_2M.csv",
+    "OUT_PANDAS_CSV_FILE_PATH": "out/processed_data_pandas_2M.csv",
     "DASK_BLOCK_SIZE": "64MB",
-    "OUT_DASK_CSV_FILE_PATH": "../out/processed_data_dask_2M.csv",
+    "OUT_DASK_CSV_FILE_PATH": "out/processed_data_dask_2M.csv",
+    "OUT_DASK_PARQUET_FILE_PATH": "out/processed_data_dask_2M.parquet",
     "GREENPLUM_CONNECTION_PARAMS": {
         "host": "your_host",
         "port": "your_port",

@@ -1,3 +1,4 @@
+import dask
 import dask.dataframe as dd
 import dask.array as da
 from dask.array.stats import skew, kurtosis
@@ -13,69 +14,64 @@ from sqlalchemy.schema import Table, MetaData
 
 from src.greenplum_connector import get_greenplum_connection_uri
 
+#dask.config.set({"distributed.diagnostics.computations": True})
 
 # Function to check if a string contains digits
 def contains_digits(s):
     return any(char.isdigit() for char in s)
 
-def transform_data_frame(df):
-    # Remove rows where column3 is empty
+
+def clean_partition(df):
+    """Applies all transformations inside a single partition."""
     df = df[df["column3"].notnull() & (df["column3"].str.strip() != "")]
 
-    # Remove rows where column4 (timestamp) is between 1 AM and 3 AM
-    df["column4"] = dd.to_datetime(df["column4"], format='%Y-%m-%d %H:%M:%S:%f', errors='coerce')  # Ensure column4 is datetime
+    df["column4"] = dd.to_datetime(df["column4"], format='%Y-%m-%d %H:%M:%S:%f', errors='coerce')
     df = df[~((df["column4"].dt.hour >= 1) & (df["column4"].dt.hour < 3))]
 
-    # If column3 does not contain digits, set it to an empty string
-    df["column3"] = df["column3"].apply(lambda x: x if contains_digits(x) else "", meta=('column3', 'object'))
-
-    # Remove duplicates while keeping one instance
-    df = df.drop_duplicates()
+    df["column3"] = df["column3"].apply(lambda x: x if contains_digits(x) else "")
 
     return df
 
-def load_table_with_dask(table_name, index_col, npartitions=10, **kwargs):
-    """
-    Loads data from Greenplum into a Dask DataFrame using SQLAlchemy.
+def transform_data_frame(ddf):
+    ddf = ddf.map_partitions(clean_partition, meta=ddf)
+    ddf = ddf.drop_duplicates()
+    return ddf
 
-    :param table_name: Name of the table to load.
-    :param index_col: Column to use as the index (must be unique & indexed in DB).
-    :param npartitions: Number of partitions for parallel loading.
-    :param kwargs: Greenplum connection parameters (host, port, dbname, user, password).
-    :return: Dask DataFrame
-    """
+def transform_data_frame2(ddf):
+    ddf = ddf.map_partitions(clean_partition, meta=ddf)
+
+    ddf["hour"] = ddf["column4"].dt.floor("h")  # Truncate to the hour
+    ddf = ddf.set_index("hour", sorted=False)
+
+    ddf = ddf.map_partitions(lambda df: df.drop_duplicates(), meta=ddf)
+    return ddf
+
+def load_table_with_dask(table_name, index_col, npartitions=10, **kwargs):
     connection_uri = get_greenplum_connection_uri(**kwargs)
     ddf = dd.read_sql_table(table_name, con=connection_uri, index_col=index_col, npartitions=npartitions)
     return ddf
 
 def load_query_with_dask_sqlalchemy(sql, npartitions=10, **kwargs):
-    """
-     Loads data from Greenplum into a Dask DataFrame using SQLAlchemy.
-
-     :param sql : SQLAlchemy Selectable. SQL query to be executed. TextClause is not supported
-     :param npartitions: Number of partitions for parallel loading.
-     :param kwargs: Greenplum connection parameters (host, port, dbname, user, password).
-     :return: Dask DataFrame
-     """
     connection_uri = get_greenplum_connection_uri(**kwargs)
     ddf = dd.read_sql_query( sql, con=connection_uri, npartitions=npartitions)
     return ddf
 
 def aggregate_data_frame(ddf):
     # Convert datetime column to hourly format
-    ddf["hour"] = ddf["column4"].dt.floor("h")  # Truncate to the hour
+    if  ~('hour' in ddf.columns):
+        ddf["hour"] = ddf["column4"].dt.floor("h")  # Truncate to the hour
 
     # Perform aggregations
-    agg_df = ddf.groupby("hour").agg({
+    agg_ddf = ddf.groupby("hour").agg({
         "column3": "nunique",  # Count of unique values
         "column1": ["mean", "median"],  # Mean and median for column1
         "column2": ["mean", "median"]  # Mean and median for column2
     })
 
     # Rename columns for clarity
-    agg_df.columns = ["unique_values_count", "mean_column1", "median_column1", "mean_column2", "median_column2"]
+    agg_ddf.columns = ["unique_values_count", "mean_column1", "median_column1", "mean_column2", "median_column2"]
 
-    return agg_df
+    return agg_ddf
 
 def merge_with_aggregated_1(ddf, agg_ddf):
     # Ensure 'hour' column exists in original DataFrame
@@ -123,24 +119,55 @@ def merge_with_aggregated_2(trans_ddf, agg_ddf):
     return merged_ddf
 
 def merge_with_aggregated_3(trans_ddf, agg_ddf):
+    if 'hour' in trans_ddf.columns:
+        trans_ddf = trans_ddf.drop(columns={ 'hour' })
     trans_ddf["base_hour"] = trans_ddf["column4"].dt.floor("h")
     trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour_row, meta=('column4', 'datetime64[ns]'))
 
     # First join on adjusted_hour
     merged_ddf = trans_ddf.merge(agg_ddf, left_on="adjusted_hour", right_on="hour", how="left")
 
-    # Identify rows that did not merge in the first join
-    unmerged_rows = merged_ddf[merged_ddf["hour"].isna()]
+    # Identify rows that did not merge in the first join and remove columns from agg_ddf
+    unmerged_rows = merged_ddf[merged_ddf["mean_column1"].isna()]
+    unmerged_rows = unmerged_rows.drop(columns=agg_ddf.columns)
 
     # Perform the second join on base_hour for the unmerged rows
-    unmerged_rows = unmerged_rows.drop(columns=["hour"])  # Drop the hour column from the first join
     second_merge = unmerged_rows.merge(agg_ddf, left_on="base_hour", right_on="hour", how="left")
 
     # Combine the results from both joins
-    merged_ddf = merged_ddf[~merged_ddf["hour"].isna()]  # Rows that merged in the first join
+    merged_ddf = merged_ddf[~merged_ddf["mean_column1"].isna()]  # Rows that merged in the first join
     final_ddf = dd.concat([merged_ddf, second_merge], axis=0, ignore_index=True)
 
+    #final_ddf = final_ddf.reset_index(drop=True)  # Drop the existing index
+    #final_ddf = final_ddf.assign(unique_id=final_ddf.index.map(lambda x: x + 1))  # Create a unique ID
+    #final_ddf = final_ddf.set_index('unique_id')  # Set the unique ID as the index
+
     return final_ddf
+
+def merge_with_aggregated_4(trans_ddf, agg_ddf):
+     # First join condition: Adjust based on minutes
+    trans_ddf["base_hour"] = trans_ddf["column4"].dt.floor("h")
+    trans_ddf['adjusted_hour'] = trans_ddf['column4'].apply(adjust_hour_row, meta=('column4', 'datetime64[ns]'))
+
+    # First join
+    merged_ddf = trans_ddf.merge(agg_ddf, left_on="adjusted_hour", right_on="hour", how="left", suffixes=("", "_joined"))
+
+    # Identify rows that were not joined and remove columns belong to agg_ddf
+    unmatched_ddf = merged_ddf[merged_ddf["mean_column1"].isna()].drop(
+        columns=[col for col in agg_ddf.columns if col != "hour"]
+    )
+
+    # Secondary join based only on the original hour
+    unmatched_ddf = unmatched_ddf.merge(agg_ddf, left_on="base_hour", right_on="hour", how="left", suffixes=("", "_fallback"))
+
+    # Fill missing values using the second join
+    for col in agg_ddf.columns:
+        if col != "hour":
+            merged_ddf[col] = merged_ddf[col].fillna(unmatched_ddf[col])
+
+    #merged_ddf.index.drop_duplicates()
+
+    return merged_ddf
 
 def get_histogram(ddf, column, bins=10):
     da_dask = ddf[column].to_dask_array(lengths=True)
