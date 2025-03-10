@@ -80,6 +80,81 @@ QUERY_TRANSFORM_AND_AGGREGATE='''WITH Deduplicated AS (
  FROM Transformed t
  	LEFT OUTER JOIN Aggregated a on DATE_TRUNC('hour', t.column4) = a.hour_column4 '''
 
+QUERY_TRANSFORM_AND_AGGREGATE_NEAREST_HOUR='''WITH Deduplicated AS (
+    SELECT DISTINCT ON (column1, column2, column3, column4) *
+    FROM test_table
+    ORDER BY column1, column2, column3, column4
+), Transformed AS (
+  SELECT 
+      column1, 
+      column2, 
+      CASE 
+          WHEN column3 ~ '[0-9]' THEN column3 
+          ELSE '' 
+      END AS column3, 
+      column4
+  FROM Deduplicated
+  WHERE column3 IS NOT NULL AND column3 <> '' 
+  AND EXTRACT(HOUR FROM column4) NOT BETWEEN 1 AND 2
+), Aggregated AS (
+  SELECT
+    DATE_TRUNC('hour', column4) AS hour_column4, 
+    COUNT(DISTINCT column3) AS unique_column3_count, 
+    AVG(column1) AS mean_column1, 
+    AVG(column2) AS mean_column2, 
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY column1) AS median_column1, 
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY column2) AS median_column2 
+  FROM Transformed
+  GROUP BY 1
+  ORDER BY 1
+ )
+ SELECT EXTRACT(MINUTE FROM t.column4) AS minutes, *
+ FROM Transformed t
+ 	LEFT OUTER JOIN Aggregated a on 
+    	(EXTRACT(MINUTE FROM t.column4) < 30
+    	 and DATE_TRUNC('hour', t.column4) = a.hour_column4)
+		or (EXTRACT(MINUTE FROM t.column4) >= 30
+    	 and (DATE_TRUNC('hour', t.column4) + INTERVAL '1 hour') = a.hour_column4) '''
+
+QUERY_TRANSFORM_AND_AGGREGATE_REAL_NEAREST_HOUR='''WITH Deduplicated AS (
+    SELECT DISTINCT ON (column1, column2, column3, column4) *
+    FROM test_table
+    ORDER BY column1, column2, column3, column4
+), Transformed AS (
+  SELECT 
+      column1, 
+      column2, 
+      CASE 
+          WHEN column3 ~ '[0-9]' THEN column3 
+          ELSE '' 
+      END AS column3, 
+      column4
+  FROM Deduplicated
+  WHERE column3 IS NOT NULL AND column3 <> '' 
+  AND EXTRACT(HOUR FROM column4) NOT BETWEEN 1 AND 2
+), Aggregated AS (
+  SELECT
+    DATE_TRUNC('hour', column4) AS hour_column4, 
+    COUNT(DISTINCT column3) AS unique_column3_count, 
+    AVG(column1) AS mean_column1, 
+    AVG(column2) AS mean_column2, 
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY column1) AS median_column1, 
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY column2) AS median_column2 
+  FROM Transformed
+  GROUP BY 1
+  ORDER BY 1
+ ), TransformedWithHor AS (
+ SELECT COALESCE(a.hour_column4, DATE_TRUNC('hour', t.column4)) AS adjusted_hour,  t.*
+ FROM Transformed t
+ 	LEFT OUTER JOIN Aggregated a on 
+    	(EXTRACT(MINUTE FROM t.column4) < 30
+    	 and DATE_TRUNC('hour', t.column4) = a.hour_column4)
+		or (EXTRACT(MINUTE FROM t.column4) >= 30
+    	 and (DATE_TRUNC('hour', t.column4) + INTERVAL '1 hour') = a.hour_column4) )
+ SELECT *
+ FROM TransformedWithHor t
+ 	LEFT OUTER JOIN Aggregated a on t.adjusted_hour = a.hour_column4 '''
+
 def create_transformation_selectable(tableName):
     # Define metadata and table dynamically
     metadata = MetaData()

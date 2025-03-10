@@ -58,13 +58,24 @@ def from_csv_full_dask_to_parquet():
         df_processed = full_dask(df_dask)
         dask_to_parquet(df_processed)
 
+def from_csv_full_dask_to_hdfs():
+    with dask_default_cluster() as client:
+        logger.info(f'start processing {settings["IN_CSV_FILE_PATH"]} by {settings["DASK_BLOCK_SIZE"]}')
+        df_dask = dd.read_csv(settings["IN_CSV_FILE_PATH"],
+                              #parse_dates=['column4'],
+                              #date_parser= lambda  x : datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S:%f'),
+                              blocksize=settings["DASK_BLOCK_SIZE"])
+        df_dask["column4"] = dd.to_datetime(df_dask["column4"], format='%Y-%m-%d %H:%M:%S:%f', errors='coerce')  # Ensure column4 is datetime
+        df_processed = full_dask(df_dask)
+        dask_to_hdfs(df_processed)
+
 def from_greenplum_table_full_dask_to_csv():
     try:
         with LocalCluster(n_workers=12, threads_per_worker=1, memory_limit='10GB') as cluster:
             with Client(cluster) as client:
                 print(cluster)
                 logger.info(f'start processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} in {settings["DASK_PARTITIONS"]} partitions')
-                df_dask = dpd.load_table_with_dask(
+                df_dask = dpd.greenplum_load_table_dask(
                     settings["GREENPLUM_TABLE_NAME"],
                     "column4",
                     settings["DASK_PARTITIONS"],
@@ -74,6 +85,28 @@ def from_greenplum_table_full_dask_to_csv():
     except Exception as e:
         logger.error("An exception occurred:", exc_info=e)
         raise
+
+def from_greenplum_table_full_dask_to_parquet():
+    with dask_default_cluster() as client:
+        logger.info(f'start processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} in {settings["DASK_PARTITIONS"]} partitions')
+        df_dask = dpd.greenplum_load_table_dask(
+            settings["GREENPLUM_TABLE_NAME"],
+            "column4",
+            settings["DASK_PARTITIONS"],
+            **settings["GREENPLUM_CONNECTION_PARAMS"])
+        df_processed = full_dask(df_dask)
+        dask_to_parquet(df_processed)
+
+def from_greenplum_table_full_dask_to_hdfs():
+    with dask_default_cluster() as client:
+        logger.info(f'start processing greenplum table {settings["GREENPLUM_TABLE_NAME"]} in {settings["DASK_PARTITIONS"]} partitions')
+        df_dask = dpd.greenplum_load_table_dask(
+            settings["GREENPLUM_TABLE_NAME"],
+            "column4",
+            settings["DASK_PARTITIONS"],
+            **settings["GREENPLUM_CONNECTION_PARAMS"])
+        df_processed = full_dask(df_dask)
+        dask_to_hdfs(df_processed)
 
 def full_dask(df_dask, client=None):
     # Analyze partition sizes before transformation
@@ -101,17 +134,28 @@ def full_dask(df_dask, client=None):
 
 def dask_to_csv(df_processed):
     df_processed.to_csv(settings["OUT_DASK_CSV_FILE_PATH"], index=False, compute=True, single_file=True)
-    logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_CSV_FILE_PATH"]}')
+    logger.info(f'Finished processing to: {settings["OUT_DASK_CSV_FILE_PATH"]}')
 
 def dask_to_parquet(df_processed):
     df_processed.to_parquet(settings["OUT_DASK_PARQUET_FILE_PATH"], index=False, compute=True)
-    logger.info(f'finish processing {settings["IN_CSV_FILE_PATH"]} to {settings["OUT_DASK_PARQUET_FILE_PATH"]}')
+    logger.info(f'Finished processing to: {settings["OUT_DASK_PARQUET_FILE_PATH"]}')
+
+def dask_to_hdfs(df_processed):
+    if settings["HDFS_FILE_FORMAT"] == 'parquet':
+        df_processed.to_parquet(settings["HDFS_URI"], index=False, compute=True, engine='pyarrow')
+        logger.info(f'Finished processing to HDFS (Parquet): {settings["HDFS_URI"]}')
+    elif settings["HDFS_FILE_FORMAT"] == 'csv':
+        df_processed.to_csv(settings["HDFS_URI"], index=False, compute=True, single_file=True, storage_options={'protocol': 'hdfs'})
+        logger.info(f'Finished processing to HDFS (CSV): {settings["HDFS_URI"]}')
+    else:
+        raise ValueError("Unsupported file format. Choose 'parquet' or 'csv'.")
+
 
 def from_greenplum_query_load_dask_to_csv():
     try:
         with Client() as client:
             logger.info(f'start processing greenplum query {queries.QUERY_TRANSFORM_1} in {settings["DASK_PARTITIONS"]} partitions')
-            df_processed = dpd.load_query_with_dask_sqlalchemy(
+            df_processed = dpd.greenplum_load_query_dask_sqlalchemy(
                 queries.create_transformation_selectable2(settings["GREENPLUM_TABLE_NAME"]),
                 settings["DASK_PARTITIONS"],
                 **settings["GREENPLUM_CONNECTION_PARAMS"])
@@ -132,7 +176,7 @@ def from_greenplum_dask_histogram(column, bins=10):
     try:
         with Client() as client:
             logger.info(f'create histogram for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
-            df_dask = dpd.load_query_with_dask_sqlalchemy(
+            df_dask = dpd.greenplum_load_query_dask_sqlalchemy(
                 queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
                 settings["DASK_PARTITIONS"],
                 **settings["GREENPLUM_CONNECTION_PARAMS"])
@@ -164,7 +208,7 @@ def from_csv_ci_via_bootstrap(column, ci):
 def from_greenplum_moments(column):
     with dask_default_cluster() as client:
         logger.info(f'calculate moments for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
-        df_dask = dpd.load_query_with_dask_sqlalchemy(
+        df_dask = dpd.greenplum_load_query_dask_sqlalchemy(
             queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
             settings["DASK_PARTITIONS"],
             **settings["GREENPLUM_CONNECTION_PARAMS"])
@@ -173,7 +217,7 @@ def from_greenplum_moments(column):
 def from_greenplum_ci_via_t_interval(column, ci):
     with dask_default_cluster() as client:
         logger.info(f'calculate confidential interval {ci} for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
-        df_dask = dpd.load_query_with_dask_sqlalchemy(
+        df_dask = dpd.greenplum_load_query_dask_sqlalchemy(
             queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
             settings["DASK_PARTITIONS"],
             **settings["GREENPLUM_CONNECTION_PARAMS"])
@@ -183,7 +227,7 @@ def from_greenplum_ci_via_t_interval(column, ci):
 def from_greenplum_ci_via_bootstrap(column, ci):
     with dask_default_cluster() as client:
         logger.info(f'calculate confidential interval {ci} for {column} in greenplum table {settings["GREENPLUM_TABLE_NAME"]}')
-        df_dask = dpd.load_query_with_dask_sqlalchemy(
+        df_dask = dpd.greenplum_load_query_dask_sqlalchemy(
             queries.create_selectable_for_column(column, settings["GREENPLUM_TABLE_NAME"]),
             settings["DASK_PARTITIONS"],
             **settings["GREENPLUM_CONNECTION_PARAMS"])

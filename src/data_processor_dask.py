@@ -62,12 +62,12 @@ def transform_data_frame3(ddf):
     ddf = ddf.map_partitions(lambda df: df.drop_duplicates(), meta=ddf)
     return ddf
 
-def load_table_with_dask(table_name, index_col, npartitions=10, **kwargs):
+def greenplum_load_table_dask(table_name, index_col, npartitions=10, **kwargs):
     connection_uri = get_greenplum_connection_uri(**kwargs)
     ddf = dd.read_sql_table(table_name, con=connection_uri, index_col=index_col, npartitions=npartitions)
     return ddf
 
-def load_query_with_dask_sqlalchemy(sql, npartitions=10, **kwargs):
+def greenplum_load_query_dask_sqlalchemy(sql, npartitions=10, **kwargs):
     connection_uri = get_greenplum_connection_uri(**kwargs)
     ddf = dd.read_sql_query( sql, con=connection_uri, npartitions=npartitions)
     return ddf
@@ -221,7 +221,7 @@ def usage_greenplum():
     }
     DASK_BLOCK_SIZE = "64MB"
     with Client() as client:
-        df_dask = load_table_with_dask("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
+        df_dask = greenplum_load_table_dask("my_table", "column4", **GREENPLUM_CONNECTION_PARAMS)
         df_processed = transform_data_frame(df_dask).compute()
         progress(client.persist(df_processed))
     result_df = df_dask.compute()

@@ -33,14 +33,14 @@ def process_dask(data_source, data_transformer, data_destination):
         elif data_destination == DataDestination.PARQUET:
             from_csv_full_dask_to_parquet()
         else:
-            pass
+            from_csv_full_dask_to_hdfs()
     else:
         if data_destination == DataDestination.CSV:
             from_greenplum_table_full_dask_to_csv()
-        elif data_destination == DataDestination.CSV:
+        elif data_destination == DataDestination.PARQUET:
             pass
         else:
-            pass
+            from_greenplum_table_full_dask_to_hdfs()
 
 def create_histogram(data_source, column, bins=10):
     if data_source == DataSource.CSV:

@@ -24,7 +24,10 @@ DEFAULT_SETTINGS = {
     },
     "GREENPLUM_TABLE_NAME": "test_table",
     "DASK_PARTITIONS": 10,
-    "GREENPLUM_CHUNK_SIZE": 1000
+    "GREENPLUM_CHUNK_SIZE": 1000,
+    "HDFS_URI": "hdfs://user@server:port/path/processed_data.parquet",
+    "HDFS_FILE_FORMAT": "parquet"
+
 }
 
 # Load settings from JSON file or use defaults
